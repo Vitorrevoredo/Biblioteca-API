@@ -1,6 +1,6 @@
-# ☕ Café Gourmet API
+# 📚 Biblioteca API
 
-Uma API REST customizada, simples e completa para gerenciamento de **Cafés Especiais e Raros**. 
+Uma API REST customizada, simples e completa para gerenciamento de **Livros e Obras Literárias**. 
 
 Desenvolvida com o objetivo de servir como um portfólio prático de gestão de configuração, esta API foi construída em **Node.js nativo**, sem o uso de frameworks de terceiros (como Express). Isso reduz a complexidade de configuração a zero, elimina pastas gigantescas como `node_modules`, otimiza o tempo de inicialização e demonstra um domínio das APIs de rede fundamentais da plataforma.
 
@@ -27,75 +27,91 @@ Como o projeto inclui um executável portátil do Node.js, você pode iniciar o 
 3. O servidor será inicializado na porta `8080` e exibirá a seguinte mensagem no console:
    ```text
    Servidor rodando em http://localhost:8080
-   - GET  http://localhost:8080/api/cafes
-   - POST http://localhost:8080/api/cafes
+   - GET  http://localhost:8080/api/livros
+   - POST http://localhost:8080/api/livros
    ```
 
 ---
 
 ## 📡 Endpoints da API
 
-### 1. Obter Todos os Cafés Cadastrados
-Retorna uma lista JSON de todos os cafés especiais cadastrados.
+### 1. Obter Todos os Livros Cadastrados
+Retorna uma lista JSON de todos os livros cadastrados.
 
-* **Rota**: `GET /api/cafes`
+* **Rota**: `GET /api/livros`
 * **Exemplo de Requisição (PowerShell)**:
   ```powershell
-  Invoke-RestMethod -Uri "http://localhost:8080/api/cafes" -Method Get | ConvertTo-Json -Depth 5
+  Invoke-RestMethod -Uri "http://localhost:8080/api/livros" -Method Get | ConvertTo-Json -Depth 5
   ```
 * **Resposta Esperada (200 OK)**:
   ```json
   [
     {
       "id": "1",
-      "nome": "Bourbon Amarelo",
-      "fazenda": "Fazenda Rainha",
-      "regiao": "Vale da Grama, SP",
-      "notaSCA": 88.5,
-      "processo": "Natural",
-      "notasSensoriais": ["frutas amarelas", "chocolate", "caramelo"]
+      "titulo": "Dom Casmurro",
+      "autor": "Machado de Assis",
+      "genero": "Romance",
+      "anoPublicacao": 1899,
+      "paginas": 256,
+      "sinopse": "Uma narrativa em primeira pessoa por Bento Santiago (Bentinho) sobre sua vida, seu amor por Capitu e a dúvida atormentadora sobre a fidelidade dela.",
+      "palavrasChave": [
+        "Literatura Brasileira",
+        "Realismo",
+        "Clássico"
+      ]
     }
   ]
   ```
 
-### 2. Cadastrar um Novo Café Especial
-Cadastra um novo café no banco de dados JSON local. O endpoint conta com validações estritas (ex: a nota SCA precisa ser um número entre 80 e 100).
+### 2. Cadastrar um Novo Livro
+Cadastra um novo livro no banco de dados JSON local. O endpoint conta com validações estritas (ex: o ano de publicação deve ser um ano inteiro válido entre 1000 e o ano atual).
 
-* **Rota**: `POST /api/cafes`
+* **Rota**: `POST /api/livros`
 * **Formato do Corpo (JSON)**:
   ```json
   {
-    "nome": "Geisha Esmeralda",
-    "fazenda": "Fazenda Vista Alegre",
-    "regiao": "Cerrado Mineiro",
-    "notaSCA": 91.2,
-    "processo": "Cereja Despolpado",
-    "notasSensoriais": ["jasmin", "limão", "mel"]
+    "titulo": "A Hora da Estrela",
+    "autor": "Clarice Lispector",
+    "genero": "Romance",
+    "anoPublicacao": 1977,
+    "paginas": 88,
+    "sinopse": "A melancólica história de Macabéa, uma datilógrafa nordestina órfã e alienada que vive no Rio de Janeiro e reflete sobre sua própria existência.",
+    "palavrasChave": [
+      "Literatura Brasileira",
+      "Existencialismo",
+      "Modernismo"
+    ]
   }
   ```
 * **Exemplo de Requisição (PowerShell)**:
   ```powershell
   $body = @{
-      nome = "Geisha Esmeralda"
-      fazenda = "Fazenda Vista Alegre"
-      regiao = "Cerrado Mineiro"
-      notaSCA = 91.2
-      processo = "Cereja Despolpado"
-      notasSensoriais = @("jasmin", "limão", "mel")
+      titulo = "A Hora da Estrela"
+      autor = "Clarice Lispector"
+      genero = "Romance"
+      anoPublicacao = 1977
+      paginas = 88
+      sinopse = "A melancólica história de Macabéa, uma datilógrafa nordestina órfã e alienada que vive no Rio de Janeiro e reflete sobre sua própria existência."
+      palavrasChave = @("Literatura Brasileira", "Existencialismo", "Modernismo")
   } | ConvertTo-Json -Depth 5
 
-  Invoke-RestMethod -Uri "http://localhost:8080/api/cafes" -Method Post -Body $body -ContentType "application/json; charset=utf-8"
+  Invoke-RestMethod -Uri "http://localhost:8080/api/livros" -Method Post -Body $body -ContentType "application/json; charset=utf-8"
   ```
 * **Resposta Esperada (201 Created)**:
   ```json
   {
-    "id": "4",
-    "nome": "Geisha Esmeralda",
-    "fazenda": "Fazenda Vista Alegre",
-    "regiao": "Cerrado Mineiro",
-    "notaSCA": 91.2,
-    "processo": "Cereja Despolpado",
-    "notasSensoriais": ["jasmin", "limão", "mel"]
+    "id": "5",
+    "titulo": "A Hora da Estrela",
+    "autor": "Clarice Lispector",
+    "genero": "Romance",
+    "anoPublicacao": 1977,
+    "paginas": 88,
+    "sinopse": "A melancólica história de Macabéa, uma datilógrafa nordestina órfã e alienada que vive no Rio de Janeiro e reflete sobre sua própria existência.",
+    "palavrasChave": [
+      "Literatura Brasileira",
+      "Existencialismo",
+      "Modernismo"
+    ]
   }
   ```
 
