@@ -4,6 +4,17 @@ const path = require('path');
 
 const PORT = 8080;
 const DB_PATH = path.join(__dirname, 'database.json');
+const WEB_PATH = path.join(__dirname, '..', 'web');
+
+const MIME_TYPES = {
+    '.html': 'text/html',
+    '.css': 'text/css',
+    '.js': 'text/javascript',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.svg': 'image/svg+xml'
+};
 
 // Função auxiliar para ler o arquivo JSON do banco de dados
 function readDatabase() {
@@ -57,14 +68,42 @@ function sendJSON(res, statusCode, data) {
     res.end(JSON.stringify(data));
 }
 
+// Serve arquivos estáticos da pasta web
+function serveStaticFile(res, pathname) {
+    let filePath = path.join(WEB_PATH, pathname === '/' ? 'index.html' : pathname);
+    
+    const extname = String(path.extname(filePath)).toLowerCase();
+    const contentType = MIME_TYPES[extname] || 'application/octet-stream';
+
+    fs.readFile(filePath, (error, content) => {
+        if (error) {
+            if (error.code === 'ENOENT') {
+                fs.readFile(path.join(WEB_PATH, 'index.html'), (err, fallbackContent) => {
+                    if (err) {
+                        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                        res.end('Página não encontrada e index.html ausente.', 'utf-8');
+                    } else {
+                        res.writeHead(200, { 'Content-Type': 'text/html' });
+                        res.end(fallbackContent, 'utf-8');
+                    }
+                });
+            } else {
+                res.writeHead(500);
+                res.end(`Erro no servidor: ${error.code}..\n`);
+            }
+        } else {
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(content, 'utf-8');
+        }
+    });
+}
+
 // Criação do servidor HTTP nativo
 const server = http.createServer(async (req, res) => {
-    // Configurações básicas de CORS para permitir requisições externas caso necessário
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Manipula requisição OPTIONS (CORS preflight)
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();
@@ -74,58 +113,35 @@ const server = http.createServer(async (req, res) => {
     const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
     const pathname = parsedUrl.pathname;
 
-    // Rota: GET /api/livros
+    // Se não for API, serve estáticos
+    if (!pathname.startsWith('/api/')) {
+        return serveStaticFile(res, pathname);
+    }
+
+    // Rotas da API
     if (pathname === '/api/livros' && req.method === 'GET') {
         const livros = readDatabase();
         sendJSON(res, 200, livros);
         return;
     }
 
-    // Rota: POST /api/livros
     if (pathname === '/api/livros' && req.method === 'POST') {
         try {
             const body = await getRequestBody(req);
-            
-            if (!body) {
-                sendJSON(res, 400, { erro: "O corpo da requisição não pode estar vazio." });
-                return;
-            }
+            if (!body) return sendJSON(res, 400, { erro: "O corpo da requisição não pode estar vazio." });
 
             const { titulo, autor, genero, anoPublicacao, paginas, sinopse, palavrasChave } = body;
 
             // Validações detalhadas do livro
-            if (!titulo || typeof titulo !== 'string' || titulo.trim() === '') {
-                sendJSON(res, 400, { erro: "O campo 'titulo' é obrigatório e deve ser uma string não vazia." });
-                return;
-            }
-            if (!autor || typeof autor !== 'string' || autor.trim() === '') {
-                sendJSON(res, 400, { erro: "O campo 'autor' é obrigatório e deve ser uma string não vazia." });
-                return;
-            }
-            if (!genero || typeof genero !== 'string' || genero.trim() === '') {
-                sendJSON(res, 400, { erro: "O campo 'genero' é obrigatório e deve ser uma string não vazia." });
-                return;
-            }
-            if (anoPublicacao === undefined || typeof anoPublicacao !== 'number' || !Number.isInteger(anoPublicacao) || anoPublicacao < 1000 || anoPublicacao > new Date().getFullYear()) {
-                sendJSON(res, 400, { erro: `O campo 'anoPublicacao' é obrigatório, deve ser um número inteiro entre 1000 e ${new Date().getFullYear()}.` });
-                return;
-            }
-            if (paginas === undefined || typeof paginas !== 'number' || !Number.isInteger(paginas) || paginas <= 0) {
-                sendJSON(res, 400, { erro: "O campo 'paginas' é obrigatório e deve ser um número inteiro maior que zero." });
-                return;
-            }
-            if (!sinopse || typeof sinopse !== 'string' || sinopse.trim() === '') {
-                sendJSON(res, 400, { erro: "O campo 'sinopse' é obrigatório e deve ser uma string não vazia." });
-                return;
-            }
-            if (!palavrasChave || !Array.isArray(palavrasChave) || palavrasChave.length === 0) {
-                sendJSON(res, 400, { erro: "O campo 'palavrasChave' é obrigatório e deve ser um array com ao menos uma palavra-chave descritora." });
-                return;
-            }
+            if (!titulo || typeof titulo !== 'string' || titulo.trim() === '') return sendJSON(res, 400, { erro: "O campo 'titulo' é obrigatório." });
+            if (!autor || typeof autor !== 'string' || autor.trim() === '') return sendJSON(res, 400, { erro: "O campo 'autor' é obrigatório." });
+            if (!genero || typeof genero !== 'string' || genero.trim() === '') return sendJSON(res, 400, { erro: "O campo 'genero' é obrigatório." });
+            if (anoPublicacao === undefined || typeof anoPublicacao !== 'number' || !Number.isInteger(anoPublicacao)) return sendJSON(res, 400, { erro: "O campo 'anoPublicacao' é inválido." });
+            if (paginas === undefined || typeof paginas !== 'number' || !Number.isInteger(paginas) || paginas <= 0) return sendJSON(res, 400, { erro: "O campo 'paginas' é inválido." });
+            if (!sinopse || typeof sinopse !== 'string' || sinopse.trim() === '') return sendJSON(res, 400, { erro: "O campo 'sinopse' é obrigatório." });
+            if (!palavrasChave || !Array.isArray(palavrasChave) || palavrasChave.length === 0) return sendJSON(res, 400, { erro: "O campo 'palavrasChave' deve ser um array." });
 
             const livros = readDatabase();
-            
-            // Geração de ID incremental a partir dos dados persistidos
             const maxId = livros.reduce((max, livro) => Math.max(max, parseInt(livro.id) || 0), 0);
             const newId = (maxId + 1).toString();
 
@@ -134,8 +150,8 @@ const server = http.createServer(async (req, res) => {
                 titulo: titulo.trim(),
                 autor: autor.trim(),
                 genero: genero.trim(),
-                anoPublicacao: anoPublicacao,
-                paginas: paginas,
+                anoPublicacao,
+                paginas,
                 sinopse: sinopse.trim(),
                 palavrasChave: palavrasChave.map(n => typeof n === 'string' ? n.trim() : '').filter(n => n !== '')
             };
@@ -143,33 +159,40 @@ const server = http.createServer(async (req, res) => {
             livros.push(novoLivro);
             const sucesso = writeDatabase(livros);
 
-            if (!sucesso) {
-                sendJSON(res, 500, { erro: "Falha interna ao salvar as alterações no banco de dados." });
-                return;
-            }
-
-            sendJSON(res, 201, novoLivro);
-            return;
+            if (!sucesso) return sendJSON(res, 500, { erro: "Falha interna ao salvar as alterações." });
+            return sendJSON(res, 201, novoLivro);
         } catch (error) {
-            sendJSON(res, 400, { erro: error.message });
-            return;
+            return sendJSON(res, 400, { erro: error.message });
         }
     }
 
-    // Endpoint correto mas método incorreto
-    if (pathname === '/api/livros') {
-        res.writeHead(405, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ erro: `O método ${req.method} não é suportado para este endpoint.` }));
-        return;
+    if (pathname.startsWith('/api/livros/') && req.method === 'DELETE') {
+        const id = pathname.split('/')[3];
+        if (!id) return sendJSON(res, 400, { erro: "ID não fornecido." });
+
+        const livros = readDatabase();
+        const index = livros.findIndex(l => l.id === id);
+
+        if (index === -1) {
+            return sendJSON(res, 404, { erro: "Livro não encontrado." });
+        }
+
+        livros.splice(index, 1);
+        const sucesso = writeDatabase(livros);
+
+        if (!sucesso) return sendJSON(res, 500, { erro: "Falha interna ao excluir." });
+        
+        return sendJSON(res, 200, { mensagem: "Livro removido com sucesso." });
     }
 
-    // Rota não mapeada
-    sendJSON(res, 404, { erro: "Recurso não encontrado. Use GET /api/livros para buscar ou POST /api/livros para adicionar." });
+    sendJSON(res, 404, { erro: "Recurso não encontrado na API." });
 });
 
 // Inicialização do servidor
 server.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
+    console.log(`- Interface Web servida em http://localhost:${PORT}/`);
     console.log(`- GET  http://localhost:${PORT}/api/livros`);
     console.log(`- POST http://localhost:${PORT}/api/livros`);
+    console.log(`- DELETE http://localhost:${PORT}/api/livros/:id`);
 });
