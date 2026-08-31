@@ -15,11 +15,11 @@ Desenvolvida com o objetivo de servir como um portfólio prático de gestão de 
 
 ---
 
-## 🚀 Como Executar a API
+## 🚀 Como Executar o Projeto (API + Interface Web)
 
-Como o projeto inclui um executável portátil do Node.js, você pode iniciar o servidor imediatamente no Windows.
+Como o projeto inclui um executável portátil do Node.js e tudo foi unificado, você pode iniciar o servidor e a interface de uma só vez, sem necessidade de instalar dependências extras ou utilizar npm:
 
-1. **Abra o PowerShell** ou o terminal de sua preferência no diretório raiz do projeto.
+1. **Abra o PowerShell** ou o terminal de sua preferência no diretório raiz do projeto (`Biblioteca-API`).
 2. **Execute o servidor** com o seguinte comando:
    ```powershell
    .\.bin\node.exe src\server.js
@@ -27,9 +27,12 @@ Como o projeto inclui um executável portátil do Node.js, você pode iniciar o 
 3. O servidor será inicializado na porta `8080` e exibirá a seguinte mensagem no console:
    ```text
    Servidor rodando em http://localhost:8080
+   - Interface Web servida em http://localhost:8080/
    - GET  http://localhost:8080/api/livros
    - POST http://localhost:8080/api/livros
+   - DELETE http://localhost:8080/api/livros/:id
    ```
+4. **Acesse a aplicação**: Abra seu navegador e navegue até `http://localhost:8080/`. O Node.js irá servir a interface completa que consome a API REST.
 
 ---
 
