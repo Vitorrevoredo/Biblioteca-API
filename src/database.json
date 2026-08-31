@@ -1,55 +1,58 @@
 [
   {
     "id": "1",
-    "nome": "Bourbon Amarelo",
-    "fazenda": "Fazenda Rainha",
-    "regiao": "Vale da Grama, SP",
-    "notaSCA": 88.5,
-    "processo": "Natural",
-    "notasSensoriais": [
-      "frutas amarelas",
-      "chocolate",
-      "caramelo"
+    "titulo": "Dom Casmurro",
+    "autor": "Machado de Assis",
+    "genero": "Romance",
+    "anoPublicacao": 1899,
+    "paginas": 256,
+    "sinopse": "Uma narrativa em primeira pessoa por Bento Santiago (Bentinho) sobre sua vida, seu amor por Capitu e a dúvida atormentadora sobre a fidelidade dela.",
+    "palavrasChave": [
+      "Literatura Brasileira",
+      "Realismo",
+      "Clássico"
     ]
   },
   {
     "id": "2",
-    "nome": "Geisha Florestal",
-    "fazenda": "Fazenda Vista Alegre",
-    "regiao": "Cerrado Mineiro, MG",
-    "notaSCA": 90.5,
-    "processo": "Fermentação Anaeróbica",
-    "notasSensoriais": [
-      "floral",
-      "jasmin",
-      "pêssego",
-      "mel de laranjeira"
+    "titulo": "O Alquimista",
+    "autor": "Paulo Coelho",
+    "genero": "Ficção",
+    "anoPublicacao": 1988,
+    "paginas": 172,
+    "sinopse": "A jornada espiritual do jovem pastor espanhol Santiago em busca de um tesouro escondido no Egito, descobrindo no caminho sua 'Lenda Pessoal'.",
+    "palavrasChave": [
+      "Espiritualidade",
+      "Aventura",
+      "Best-seller"
     ]
   },
   {
     "id": "3",
-    "nome": "Catuaí Vermelho CD",
-    "fazenda": "Sítio Alto da Serra",
-    "regiao": "Serra da Mantiqueira, MG",
-    "notaSCA": 85,
-    "processo": "Cereja Despolpado",
-    "notasSensoriais": [
-      "chocolate amargo",
-      "castanhas",
-      "corpo denso"
+    "titulo": "Grande Sertão: Veredas",
+    "autor": "João Guimarães Rosa",
+    "genero": "Romance",
+    "anoPublicacao": 1956,
+    "paginas": 600,
+    "sinopse": "O jagunço Riobaldo narra suas andanças pelo sertão mineiro, refletindo sobre o amor, a guerra entre bandos e o pacto com o diabo.",
+    "palavrasChave": [
+      "Literatura Brasileira",
+      "Modernismo",
+      "Sertão"
     ]
   },
   {
     "id": "4",
-    "nome": "Geisha Esmeralda",
-    "fazenda": "Fazenda Vista Alegre",
-    "regiao": "Cerrado Mineiro",
-    "notaSCA": 91.2,
-    "processo": "Cereja Despolpado",
-    "notasSensoriais": [
-      "jasmin",
-      "limão",
-      "mel"
+    "titulo": "Memórias Póstumas de Brás Cubas",
+    "autor": "Machado de Assis",
+    "genero": "Romance",
+    "anoPublicacao": 1881,
+    "paginas": 160,
+    "sinopse": "Um defunto autor narra sua própria vida do além-túmulo, criticando a sociedade burguesa carioca do século XIX com ironia e ceticismo.",
+    "palavrasChave": [
+      "Literatura Brasileira",
+      "Realismo",
+      "Ironia"
     ]
   }
 ]
