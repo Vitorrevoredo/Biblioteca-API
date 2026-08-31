@@ -1,0 +1,55 @@
+[
+  {
+    "id": "1",
+    "nome": "Bourbon Amarelo",
+    "fazenda": "Fazenda Rainha",
+    "regiao": "Vale da Grama, SP",
+    "notaSCA": 88.5,
+    "processo": "Natural",
+    "notasSensoriais": [
+      "frutas amarelas",
+      "chocolate",
+      "caramelo"
+    ]
+  },
+  {
+    "id": "2",
+    "nome": "Geisha Florestal",
+    "fazenda": "Fazenda Vista Alegre",
+    "regiao": "Cerrado Mineiro, MG",
+    "notaSCA": 90.5,
+    "processo": "Fermentação Anaeróbica",
+    "notasSensoriais": [
+      "floral",
+      "jasmin",
+      "pêssego",
+      "mel de laranjeira"
+    ]
+  },
+  {
+    "id": "3",
+    "nome": "Catuaí Vermelho CD",
+    "fazenda": "Sítio Alto da Serra",
+    "regiao": "Serra da Mantiqueira, MG",
+    "notaSCA": 85,
+    "processo": "Cereja Despolpado",
+    "notasSensoriais": [
+      "chocolate amargo",
+      "castanhas",
+      "corpo denso"
+    ]
+  },
+  {
+    "id": "4",
+    "nome": "Geisha Esmeralda",
+    "fazenda": "Fazenda Vista Alegre",
+    "regiao": "Cerrado Mineiro",
+    "notaSCA": 91.2,
+    "processo": "Cereja Despolpado",
+    "notasSensoriais": [
+      "jasmin",
+      "limão",
+      "mel"
+    ]
+  }
+]
