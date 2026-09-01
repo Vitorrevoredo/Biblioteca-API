@@ -74,9 +74,9 @@ function renderBooks() {
     if (filtered.length === 0) {
         booksGrid.innerHTML = `
             <div class="empty-state">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-                <h3>Nenhum livro encontrado</h3>
-                <p>Tente ajustar seus filtros de busca.</p>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <h3>Nenhum resultado encontrado</h3>
+                <p>O termo pesquisado não consta em nosso acervo.</p>
             </div>
         `;
         return;
@@ -87,7 +87,7 @@ function renderBooks() {
         card.className = 'book-card';
         
         const tagsHtml = `
-            <span class="tag" style="background-color: rgba(99, 102, 241, 0.2)">
+            <span class="tag tag-primary">
                 ${book.genero}
             </span>
             ${book.palavrasChave.slice(0, 2).map(kw => `<span class="tag">${kw}</span>`).join('')}
@@ -97,19 +97,19 @@ function renderBooks() {
             <div class="card-header">
                 <h3 class="book-title">${book.titulo}</h3>
                 <p class="book-author">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-small"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     ${book.autor}
                 </p>
             </div>
             <div class="card-body">
                 <div class="book-meta">
                     <span class="book-meta-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-small"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         ${book.anoPublicacao}
                     </span>
                     <span class="book-meta-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-                        ${book.paginas} págs
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-small"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        ${book.paginas} páginas
                     </span>
                 </div>
                 <div class="tags">
@@ -117,7 +117,7 @@ function renderBooks() {
                 </div>
             </div>
             <div class="card-footer">
-                <button class="btn-primary" onclick="openModal('${book.id}')">Ver Detalhes</button>
+                <button class="btn-primary" onclick="openModal('${book.id}')">Acessar Registro</button>
             </div>
         `;
         booksGrid.appendChild(card);
@@ -153,7 +153,7 @@ function closeModal() {
 async function deleteBook() {
     if (!selectedBookId) return;
     
-    if (confirm('Tem certeza que deseja excluir este livro?')) {
+    if (confirm('Tem certeza que deseja remover esta obra do acervo?')) {
         try {
             const response = await fetch(`${API_URL}/${selectedBookId}`, {
                 method: 'DELETE'
@@ -163,11 +163,11 @@ async function deleteBook() {
                 closeModal();
                 await fetchBooks();
             } else {
-                alert('Erro ao excluir livro.');
+                alert('Erro ao excluir registro.');
             }
         } catch (error) {
             console.error('Erro ao deletar:', error);
-            alert('Erro de rede ao tentar excluir.');
+            alert('Erro de rede ao tentar remover a obra.');
         }
     }
 }
