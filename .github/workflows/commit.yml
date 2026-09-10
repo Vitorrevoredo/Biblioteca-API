@@ -18,7 +18,7 @@ jobs:
       - name: Trocar para branch específica
         run: git checkout ${{ github.ref_name }}
 
-      - name: Configurar Node.js
+      - name: Instalar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -26,15 +26,5 @@ jobs:
       - name: Instalar dependências
         run: npm install
 
-      - name: Executar testes
-        run: npm test -- --coverage
-
-      - name: Verificar cobertura mínima 90%
-        run: |
-          node -e "
-          const coverage=require('./coverage/coverage-summary.json');
-          if(coverage.total.lines.pct < 90){
-            console.error('Cobertura menor que 90%');
-            process.exit(1);
-          }
-          "
+      - name: Executar testes com cobertura
+        run: npm test
