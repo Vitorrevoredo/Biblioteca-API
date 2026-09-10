@@ -12,36 +12,29 @@ jobs:
 
     steps:
 
-      # Clonar repositório
       - name: Clonar repositório
         uses: actions/checkout@v4
 
+      - name: Trocar para branch específica
+        run: git checkout ${{ github.ref_name }}
 
-      # Instalar Java
-      - name: Configurar ambiente Java
-        uses: actions/setup-java@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          node-version: 20
 
+      - name: Instalar dependências
+        run: npm install
 
-      # Instalar Maven
-      - name: Configurar Maven
-        uses: stCarolas/setup-maven@v4
-        with:
-          maven-version: 3.9.6
-
-
-      # Instalar dependências e compilar projeto
-      - name: Instalar dependências e compilar
-        run: mvn clean install -DskipTests
-
-
-      # Executar testes
       - name: Executar testes
-        run: mvn test
+        run: npm test -- --coverage
 
-
-      # Gerar relatório de cobertura
-      - name: Gerar cobertura de testes
-        run: mvn jacoco:report
+      - name: Verificar cobertura mínima 90%
+        run: |
+          node -e "
+          const coverage=require('./coverage/coverage-summary.json');
+          if(coverage.total.lines.pct < 90){
+            console.error('Cobertura menor que 90%');
+            process.exit(1);
+          }
+          "
