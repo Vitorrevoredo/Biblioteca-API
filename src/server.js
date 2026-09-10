@@ -188,11 +188,16 @@ const server = http.createServer(async (req, res) => {
     sendJSON(res, 404, { erro: "Recurso não encontrado na API." });
 });
 
-// Inicialização do servidor
-server.listen(PORT, () => {
-    console.log(`Servidor rodando em http://localhost:${PORT}`);
-    console.log(`- Interface Web servida em http://localhost:${PORT}/`);
-    console.log(`- GET  http://localhost:${PORT}/api/livros`);
-    console.log(`- POST http://localhost:${PORT}/api/livros`);
-    console.log(`- DELETE http://localhost:${PORT}/api/livros/:id`);
-});
+// Inicialização do servidor (somente quando executado diretamente)
+if (require.main === module) {
+    server.listen(PORT, () => {
+        console.log(`Servidor rodando em http://localhost:${PORT}`);
+        console.log(`- Interface Web servida em http://localhost:${PORT}/`);
+        console.log(`- GET  http://localhost:${PORT}/api/livros`);
+        console.log(`- POST http://localhost:${PORT}/api/livros`);
+        console.log(`- DELETE http://localhost:${PORT}/api/livros/:id`);
+    });
+}
+
+// Exporta funções e servidor para testes
+module.exports = { readDatabase, writeDatabase, getRequestBody, sendJSON, server };
