@@ -1,0 +1,33 @@
+{
+  "name": "biblioteca-api",
+  "version": "1.0.0",
+  "description": "API REST para gerenciamento de Livros e Obras Literárias, construída em Node.js nativo.",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "jest --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 90,
+        "functions": 90,
+        "lines": 90,
+        "statements": 90
+      }
+    }
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "keywords": ["api", "biblioteca", "nodejs", "rest"],
+  "license": "ISC"
+}
