@@ -11,22 +11,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      # Clonar repositório
       - name: Clonar repositório
         uses: actions/checkout@v4
 
+
+      # Instalar Java
       - name: Configurar ambiente Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Instalar dependências
-        run: |
-          chmod +x ./mvnw
-          ./mvnw clean install -DskipTests
 
+      # Instalar Maven
+      - name: Configurar Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: 3.9.6
+
+
+      # Instalar dependências e compilar projeto
+      - name: Instalar dependências e compilar
+        run: mvn clean install -DskipTests
+
+
+      # Executar testes
       - name: Executar testes
-        run: ./mvnw test
+        run: mvn test
 
+
+      # Gerar relatório de cobertura
       - name: Gerar cobertura de testes
-        run: ./mvnw jacoco:report
+        run: mvn jacoco:report
