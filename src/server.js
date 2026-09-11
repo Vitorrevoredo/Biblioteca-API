@@ -200,4 +200,4 @@ if (require.main === module) {
 }
 
 // Exporta funções e servidor para testes
-module.exports = { readDatabase, writeDatabase, getRequestBody, sendJSON, server };
+module.exports = { readDatabase, writeDatabase, getRequestBody, sendJSON, serveStaticFile, server, WEB_PATH };

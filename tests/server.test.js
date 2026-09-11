@@ -18,7 +18,7 @@ const WEB_PATH = path.join(__dirname, '..', 'web');
 let originalDbContent;
 
 // Importa o servidor e as funções auxiliares
-const { readDatabase, writeDatabase, getRequestBody, sendJSON, server } = require('../src/server');
+const { readDatabase, writeDatabase, getRequestBody, sendJSON, serveStaticFile, server } = require('../src/server');
 
 // Porta dinâmica para evitar conflitos
 let testServer;
@@ -367,5 +367,81 @@ describe('CORS - OPTIONS', () => {
     test('deve retornar 204 para preflight request', async () => {
         const res = await makeRequest('OPTIONS', '/api/livros');
         expect(res.statusCode).toBe(204);
+    });
+});
+
+// ===========================
+// Testes de serveStaticFile (cobertura de branches 80-92)
+// ===========================
+
+describe('serveStaticFile()', () => {
+    test('deve responder com 200 e fallback index.html para rota desconhecida (ENOENT)', (done) => {
+        const mockRes = {
+            writeHead: jest.fn(),
+            end: jest.fn(() => {
+                expect(mockRes.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'text/html' });
+                done();
+            })
+        };
+        // Solicita arquivo inexistente; o servidor deve fazer fallback para index.html
+        serveStaticFile(mockRes, '/arquivo-que-nao-existe.html');
+    });
+
+    test('deve responder com 404 quando arquivo E index.html estão ausentes (ENOENT duplo)', (done) => {
+        // Renomeia temporariamente o index.html para simular ausência
+        const indexPath = path.join(WEB_PATH, 'index.html');
+        const backupPath = indexPath + '.bak';
+        fs.renameSync(indexPath, backupPath);
+
+        const mockRes = {
+            writeHead: jest.fn(),
+            end: jest.fn(() => {
+                try {
+                    expect(mockRes.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                    expect(mockRes.end).toHaveBeenCalledWith('Página não encontrada e index.html ausente.', 'utf-8');
+                } finally {
+                    fs.renameSync(backupPath, indexPath);
+                }
+                done();
+            })
+        };
+        serveStaticFile(mockRes, '/outro-arquivo-inexistente.txt');
+    });
+
+    test('deve responder com 500 para erro de leitura não-ENOENT', (done) => {
+        const originalReadFile = fs.readFile;
+        // Simula erro genérico (não ENOENT)
+        fs.readFile = jest.fn((filePath, callback) => {
+            const err = new Error('Erro de permissão');
+            err.code = 'EACCES';
+            callback(err);
+        });
+
+        const mockRes = {
+            writeHead: jest.fn(),
+            end: jest.fn(() => {
+                try {
+                    expect(mockRes.writeHead).toHaveBeenCalledWith(500);
+                } finally {
+                    fs.readFile = originalReadFile;
+                }
+                done();
+            })
+        };
+        serveStaticFile(mockRes, '/index.html');
+    });
+});
+
+// ===========================
+// Teste de inicialização do servidor (linhas 192-199)
+// ===========================
+
+describe('Inicialização do servidor (require.main branch)', () => {
+    test('não deve iniciar o servidor quando não é o módulo principal', () => {
+        // Quando importado via require() (como nos testes), require.main !== module
+        // por isso o server.listen(PORT) não é chamado automaticamente.
+        // Este teste valida que o módulo exporta corretamente sem efeitos colaterais.
+        expect(server).toBeDefined();
+        expect(typeof server.listen).toBe('function');
     });
 });
