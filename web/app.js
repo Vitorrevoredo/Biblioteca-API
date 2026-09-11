@@ -10,10 +10,33 @@ const booksGrid = document.getElementById('booksGrid');
 const filtersContainer = document.getElementById('filtersContainer');
 const searchInput = document.getElementById('searchInput');
 
-// Modal Elements
+// Modal de Detalhes
 const modal = document.getElementById('bookModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const deleteBookBtn = document.getElementById('deleteBookBtn');
+const editBookBtn = document.getElementById('editBookBtn');
+
+// Modal de Formulário
+const formModal = document.getElementById('formModal');
+const closeFormModalBtn = document.getElementById('closeFormModalBtn');
+const cancelFormBtn = document.getElementById('cancelFormBtn');
+const bookForm = document.getElementById('bookForm');
+const btnOpenNewBook = document.getElementById('btnOpenNewBook');
+const btnHeaderNewBook = document.getElementById('btnHeaderNewBook');
+const formModalTitle = document.getElementById('formModalTitle');
+const formModalSubtitle = document.getElementById('formModalSubtitle');
+const saveBookBtnText = document.getElementById('saveBookBtnText');
+
+// Form Inputs
+const bookFormId = document.getElementById('bookFormId');
+const inputTitulo = document.getElementById('inputTitulo');
+const inputGenero = document.getElementById('inputGenero');
+const inputAutor = document.getElementById('inputAutor');
+const inputAno = document.getElementById('inputAno');
+const inputPaginas = document.getElementById('inputPaginas');
+const inputCapa = document.getElementById('inputCapa');
+const inputSinopse = document.getElementById('inputSinopse');
+const inputTags = document.getElementById('inputTags');
 
 // Inicialização
 async function init() {
@@ -56,7 +79,7 @@ function renderFilters() {
             : booksData.filter(b => b.genero === genre).length;
 
         btn.innerHTML = `
-            <span>${genre}</span>
+            <span>${escapeHtml(genre)}</span>
             <span class="filter-count">${count}</span>
         `;
 
@@ -69,12 +92,12 @@ function renderFilters() {
     });
 }
 
-// Fallback de capa elegante com SVG caso a imagem falhe ou não exista
+// Fallback de capa elegante com SVG
 function getCoverHtml(book) {
     if (book.capa) {
         return `
             <div class="card-cover-wrap">
-                <img src="${book.capa}" alt="Capa de ${book.titulo}" class="card-cover-img" loading="lazy" onerror="this.onerror=null; this.parentElement.innerHTML=getPlaceholderHtml('${escapeHtml(book.titulo)}', '${escapeHtml(book.autor)}');">
+                <img src="${book.capa}" alt="Capa de ${escapeHtml(book.titulo)}" class="card-cover-img" loading="lazy" onerror="this.onerror=null; this.parentElement.innerHTML=getPlaceholderHtml('${escapeHtml(book.titulo)}', '${escapeHtml(book.autor)}');">
             </div>
         `;
     }
@@ -93,7 +116,7 @@ function getPlaceholderHtml(titulo, autor) {
 
 function escapeHtml(text) {
     if (!text) return '';
-    return text
+    return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -109,7 +132,7 @@ function renderBooks() {
         const matchesSearch = 
             book.titulo.toLowerCase().includes(currentSearch.toLowerCase()) ||
             book.autor.toLowerCase().includes(currentSearch.toLowerCase()) ||
-            book.palavrasChave.some(kw => kw.toLowerCase().includes(currentSearch.toLowerCase()));
+            (book.palavrasChave && book.palavrasChave.some(kw => kw.toLowerCase().includes(currentSearch.toLowerCase())));
         
         const matchesGenre = currentFilter === 'Todos' || book.genero === currentFilter;
         
@@ -121,7 +144,7 @@ function renderBooks() {
             <div class="empty-state">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <h3>Nenhum resultado encontrado</h3>
-                <p>O termo pesquisado não consta em nosso acervo.</p>
+                <p>Nenhuma obra corresponde aos critérios pesquisados.</p>
             </div>
         `;
         return;
@@ -131,17 +154,17 @@ function renderBooks() {
         const card = document.createElement('article');
         card.className = 'book-card';
         card.onclick = (e) => {
-            // Não reabre modal se clicar em ações específicas
             if (!e.target.closest('button')) {
                 openModal(book.id);
             }
         };
         
+        const tags = Array.isArray(book.palavrasChave) ? book.palavrasChave : [];
         const tagsHtml = `
             <span class="tag tag-primary">
                 ${escapeHtml(book.genero)}
             </span>
-            ${book.palavrasChave.slice(0, 2).map(kw => `<span class="tag">${escapeHtml(kw)}</span>`).join('')}
+            ${tags.slice(0, 2).map(kw => `<span class="tag">${escapeHtml(kw)}</span>`).join('')}
         `;
 
         card.innerHTML = `
@@ -184,7 +207,7 @@ function renderBooks() {
     });
 }
 
-// Gerencia Modal
+// Gerencia Modal de Detalhes
 window.openModal = function(id) {
     const book = booksData.find(b => b.id === id);
     if (!book) return;
@@ -211,8 +234,9 @@ window.openModal = function(id) {
         }
     }
     
+    const tags = Array.isArray(book.palavrasChave) ? book.palavrasChave : [];
     const tagsContainer = document.getElementById('modalTags');
-    tagsContainer.innerHTML = book.palavrasChave.map(kw => `<span class="tag" style="margin:0">${escapeHtml(kw)}</span>`).join('');
+    tagsContainer.innerHTML = tags.map(kw => `<span class="tag" style="margin:0">${escapeHtml(kw)}</span>`).join('');
     
     modal.style.display = 'flex';
 };
@@ -222,7 +246,88 @@ function closeModal() {
     selectedBookId = null;
 }
 
-// Excluir Livro
+// Modal de Criação / Edição
+function openCreateModal() {
+    bookForm.reset();
+    bookFormId.value = '';
+    formModalTitle.textContent = 'Cadastrar Nova Obra';
+    formModalSubtitle.textContent = 'Preencha as informações do livro para adicionar ao catálogo';
+    saveBookBtnText.textContent = 'Cadastrar Obra';
+    formModal.style.display = 'flex';
+}
+
+function openEditModal(id) {
+    const book = booksData.find(b => b.id === id);
+    if (!book) return;
+
+    closeModal(); // fecha modal de detalhes
+    
+    bookFormId.value = book.id;
+    inputTitulo.value = book.titulo;
+    inputGenero.value = book.genero;
+    inputAutor.value = book.autor;
+    inputAno.value = book.anoPublicacao;
+    inputPaginas.value = book.paginas;
+    inputCapa.value = book.capa || '';
+    inputSinopse.value = book.sinopse;
+    inputTags.value = Array.isArray(book.palavrasChave) ? book.palavrasChave.join(', ') : '';
+
+    formModalTitle.textContent = 'Editar Obra';
+    formModalSubtitle.textContent = `Atualizando informações de "${book.titulo}"`;
+    saveBookBtnText.textContent = 'Salvar Alterações';
+    formModal.style.display = 'flex';
+}
+
+function closeFormModal() {
+    formModal.style.display = 'none';
+    bookForm.reset();
+}
+
+// Submissão do Formulário (POST ou PUT)
+async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const id = bookFormId.value;
+    const isEdit = !!id;
+
+    const payload = {
+        titulo: inputTitulo.value.trim(),
+        autor: inputAutor.value.trim(),
+        genero: inputGenero.value.trim(),
+        anoPublicacao: parseInt(inputAno.value, 10),
+        paginas: parseInt(inputPaginas.value, 10),
+        sinopse: inputSinopse.value.trim(),
+        palavrasChave: inputTags.value.split(',').map(s => s.trim()).filter(s => s.length > 0)
+    };
+
+    if (inputCapa.value.trim()) {
+        payload.capa = inputCapa.value.trim();
+    }
+
+    try {
+        const url = isEdit ? `${API_URL}/${id}` : API_URL;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            closeFormModal();
+            await fetchBooks();
+        } else {
+            const errData = await response.json();
+            alert(`Erro: ${errData.erro || 'Falha ao salvar a obra'}`);
+        }
+    } catch (error) {
+        console.error('Erro na requisição:', error);
+        alert('Erro de conexão ao salvar a obra.');
+    }
+}
+
+// Excluir Livro (DELETE)
 async function deleteBook() {
     if (!selectedBookId) return;
     
@@ -252,13 +357,25 @@ function setupEventListeners() {
         renderBooks();
     });
 
+    // Detalhes Modal
     closeModalBtn.addEventListener('click', closeModal);
-    
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
-
     deleteBookBtn.addEventListener('click', deleteBook);
+    editBookBtn.addEventListener('click', () => {
+        if (selectedBookId) openEditModal(selectedBookId);
+    });
+
+    // Formulário Modal
+    if (btnOpenNewBook) btnOpenNewBook.addEventListener('click', openCreateModal);
+    if (btnHeaderNewBook) btnHeaderNewBook.addEventListener('click', openCreateModal);
+    closeFormModalBtn.addEventListener('click', closeFormModal);
+    cancelFormBtn.addEventListener('click', closeFormModal);
+    formModal.addEventListener('click', (e) => {
+        if (e.target === formModal) closeFormModal();
+    });
+    bookForm.addEventListener('submit', handleFormSubmit);
 }
 
 // Start

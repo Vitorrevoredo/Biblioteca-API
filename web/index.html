@@ -6,7 +6,7 @@
     <title>Acervo Digital | Biblioteca</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,8 +18,15 @@
                 <span>Biblioteca</span>
             </div>
 
+            <div class="sidebar-action">
+                <button id="btnOpenNewBook" class="btn-new-book">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Cadastrar Livro</span>
+                </button>
+            </div>
+
             <nav class="sidebar-nav">
-                <p class="nav-label">Acervo</p>
+                <p class="nav-label">Gêneros</p>
                 <div id="filtersContainer" class="filter-list">
                     <!-- Filtros gerados dinamicamente -->
                 </div>
@@ -37,11 +44,17 @@
             <header>
                 <div class="header-left">
                     <h1 class="page-title">Acervo Digital</h1>
-                    <p class="page-sub">Explore e gerencie obras literárias</p>
+                    <p class="page-sub">Explore, cadastre e gerencie obras literárias</p>
                 </div>
-                <div class="search-container">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Buscar obra, autor, descritor…">
+                <div class="header-actions">
+                    <div class="search-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Buscar obra, autor, descritor…">
+                    </div>
+                    <button id="btnHeaderNewBook" class="btn-primary-action">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span>Nova Obra</span>
+                    </button>
                 </div>
             </header>
 
@@ -53,7 +66,7 @@
         </div>
     </div>
 
-    <!-- Modal de Detalhes -->
+    <!-- Modal de Detalhes da Obra -->
     <div id="bookModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <button id="closeModalBtn" class="close-btn" aria-label="Fechar">
@@ -91,11 +104,88 @@
                         <div id="modalTags" class="tags-row"></div>
                     </div>
 
-                    <button id="deleteBookBtn" class="btn-remove">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        Remover do acervo
-                    </button>
+                    <div class="modal-actions-row">
+                        <button id="editBookBtn" class="btn-secondary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            <span>Editar Obra</span>
+                        </button>
+                        <button id="deleteBookBtn" class="btn-remove">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            <span>Remover</span>
+                        </button>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Formulário (Cadastrar / Editar Livro) -->
+    <div id="formModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content form-modal-content">
+            <button id="closeFormModalBtn" class="close-btn" aria-label="Fechar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+
+            <div class="modal-spine"></div>
+
+            <div class="modal-inner">
+                <div class="form-modal-header">
+                    <h2 id="formModalTitle">Cadastrar Nova Obra</h2>
+                    <p id="formModalSubtitle">Preencha as informações do livro para o catálogo</p>
+                </div>
+
+                <form id="bookForm" class="book-form">
+                    <input type="hidden" id="bookFormId">
+
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="inputTitulo">Título da Obra *</label>
+                            <input type="text" id="inputTitulo" required placeholder="Ex: Dom Casmurro">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="inputGenero">Gênero Literário *</label>
+                            <input type="text" id="inputGenero" required placeholder="Ex: Romance">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="inputAutor">Autor(a) *</label>
+                            <input type="text" id="inputAutor" required placeholder="Ex: Machado de Assis">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="inputAno">Ano *</label>
+                            <input type="number" id="inputAno" required placeholder="1899">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="inputPaginas">Páginas *</label>
+                            <input type="number" id="inputPaginas" required min="1" placeholder="256">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputCapa">URL da Capa (opcional)</label>
+                        <input type="url" id="inputCapa" placeholder="https://exemplo.com/capa.jpg">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputSinopse">Sinopse *</label>
+                        <textarea id="inputSinopse" required rows="3" placeholder="Breve resumo da obra..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputTags">Palavras-chave / Descritores (separados por vírgula) *</label>
+                        <input type="text" id="inputTags" required placeholder="Clássico, Realismo, Literatura Brasileira">
+                    </div>
+
+                    <div class="form-footer">
+                        <button type="button" id="cancelFormBtn" class="btn-cancel">Cancelar</button>
+                        <button type="submit" id="saveBookBtn" class="btn-submit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            <span id="saveBookBtnText">Salvar Obra</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

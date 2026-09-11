@@ -226,6 +226,21 @@ describe('GET /api/livros', () => {
     });
 });
 
+describe('GET /api/livros/:id', () => {
+    test('deve retornar um livro existente pelo ID (200)', async () => {
+        const res = await makeRequest('GET', '/api/livros/1');
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toHaveProperty('id', '1');
+        expect(res.body).toHaveProperty('titulo', 'Dom Casmurro');
+    });
+
+    test('deve retornar 404 para ID inexistente', async () => {
+        const res = await makeRequest('GET', '/api/livros/999');
+        expect(res.statusCode).toBe(404);
+        expect(res.body).toHaveProperty('erro');
+    });
+});
+
 describe('POST /api/livros', () => {
     const livroValido = {
         titulo: 'Livro de Teste',
@@ -314,6 +329,111 @@ describe('POST /api/livros', () => {
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('palavrasChave');
     });
+
+    test('deve retornar 500 quando writeDatabase falhar no POST', async () => {
+        const originalWriteFileSync = fs.writeFileSync;
+        fs.writeFileSync = jest.fn(() => { throw new Error('Falha de escrita'); });
+
+        const res = await makeRequest('POST', '/api/livros', livroValido);
+        expect(res.statusCode).toBe(500);
+        expect(res.body).toHaveProperty('erro');
+
+        fs.writeFileSync = originalWriteFileSync;
+    });
+});
+
+describe('PUT /api/livros/:id', () => {
+    const livroAtualizado = {
+        titulo: 'Dom Casmurro Atualizado',
+        autor: 'Machado de Assis',
+        genero: 'Romance Clássico',
+        anoPublicacao: 1900,
+        paginas: 260,
+        sinopse: 'Nova edição revisada.',
+        palavrasChave: ['Literatura', 'Clássico']
+    };
+
+    test('deve atualizar um livro existente com dados válidos (200)', async () => {
+        const res = await makeRequest('PUT', '/api/livros/1', livroAtualizado);
+        expect(res.statusCode).toBe(200);
+        expect(res.body.titulo).toBe('Dom Casmurro Atualizado');
+        expect(res.body.genero).toBe('Romance Clássico');
+    });
+
+    test('deve retornar 404 para ID inexistente', async () => {
+        const res = await makeRequest('PUT', '/api/livros/999', livroAtualizado);
+        expect(res.statusCode).toBe(404);
+        expect(res.body).toHaveProperty('erro');
+    });
+
+    test('deve retornar 400 para corpo vazio', async () => {
+        const res = await makeRequest('PUT', '/api/livros/1');
+        expect(res.statusCode).toBe(400);
+        expect(res.body).toHaveProperty('erro');
+    });
+
+    test('deve retornar 400 para JSON inválido no PUT', async () => {
+        const res = await makeRequest('PUT', '/api/livros/1', '{ json quebrado');
+        expect(res.statusCode).toBe(400);
+        expect(res.body).toHaveProperty('erro');
+    });
+
+    test('deve retornar 400 quando titulo ausente no PUT', async () => {
+        const { titulo, ...semTitulo } = livroAtualizado;
+        const res = await makeRequest('PUT', '/api/livros/1', semTitulo);
+        expect(res.statusCode).toBe(400);
+        expect(res.body.erro).toContain('titulo');
+    });
+
+    test('deve retornar 400 quando autor ausente no PUT', async () => {
+        const { autor, ...semAutor } = livroAtualizado;
+        const res = await makeRequest('PUT', '/api/livros/1', semAutor);
+        expect(res.statusCode).toBe(400);
+        expect(res.body.erro).toContain('autor');
+    });
+
+    test('deve retornar 400 quando genero ausente no PUT', async () => {
+        const { genero, ...semGenero } = livroAtualizado;
+        const res = await makeRequest('PUT', '/api/livros/1', semGenero);
+        expect(res.statusCode).toBe(400);
+        expect(res.body.erro).toContain('genero');
+    });
+
+    test('deve retornar 400 quando anoPublicacao inválido no PUT', async () => {
+        const res = await makeRequest('PUT', '/api/livros/1', { ...livroAtualizado, anoPublicacao: 'ano' });
+        expect(res.statusCode).toBe(400);
+        expect(res.body.erro).toContain('anoPublicacao');
+    });
+
+    test('deve retornar 400 quando paginas inválido no PUT', async () => {
+        const res = await makeRequest('PUT', '/api/livros/1', { ...livroAtualizado, paginas: -10 });
+        expect(res.statusCode).toBe(400);
+        expect(res.body.erro).toContain('paginas');
+    });
+
+    test('deve retornar 400 quando sinopse ausente no PUT', async () => {
+        const { sinopse, ...semSinopse } = livroAtualizado;
+        const res = await makeRequest('PUT', '/api/livros/1', semSinopse);
+        expect(res.statusCode).toBe(400);
+        expect(res.body.erro).toContain('sinopse');
+    });
+
+    test('deve retornar 400 quando palavrasChave inválido no PUT', async () => {
+        const res = await makeRequest('PUT', '/api/livros/1', { ...livroAtualizado, palavrasChave: [] });
+        expect(res.statusCode).toBe(400);
+        expect(res.body.erro).toContain('palavrasChave');
+    });
+
+    test('deve retornar 500 quando writeDatabase falhar no PUT', async () => {
+        const originalWriteFileSync = fs.writeFileSync;
+        fs.writeFileSync = jest.fn(() => { throw new Error('Falha de escrita'); });
+
+        const res = await makeRequest('PUT', '/api/livros/1', livroAtualizado);
+        expect(res.statusCode).toBe(500);
+        expect(res.body).toHaveProperty('erro');
+
+        fs.writeFileSync = originalWriteFileSync;
+    });
 });
 
 describe('DELETE /api/livros/:id', () => {
@@ -332,6 +452,17 @@ describe('DELETE /api/livros/:id', () => {
         const res = await makeRequest('DELETE', '/api/livros/999');
         expect(res.statusCode).toBe(404);
         expect(res.body).toHaveProperty('erro');
+    });
+
+    test('deve retornar 500 quando writeDatabase falhar no DELETE', async () => {
+        const originalWriteFileSync = fs.writeFileSync;
+        fs.writeFileSync = jest.fn(() => { throw new Error('Falha de escrita'); });
+
+        const res = await makeRequest('DELETE', '/api/livros/1');
+        expect(res.statusCode).toBe(500);
+        expect(res.body).toHaveProperty('erro');
+
+        fs.writeFileSync = originalWriteFileSync;
     });
 });
 
