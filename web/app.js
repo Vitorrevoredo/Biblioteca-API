@@ -27,6 +27,10 @@ async function fetchBooks() {
         const response = await fetch(API_URL);
         if (response.ok) {
             booksData = await response.json();
+            const totalCountEl = document.getElementById('totalCount');
+            if (totalCountEl) {
+                totalCountEl.textContent = booksData.length;
+            }
             renderFilters();
             renderBooks();
         } else {
@@ -134,7 +138,8 @@ window.openModal = function(id) {
     document.getElementById('modalTitle').textContent = book.titulo;
     document.getElementById('modalAuthor').textContent = book.autor;
     document.getElementById('modalSynopsis').textContent = book.sinopse;
-    document.getElementById('modalGenre').textContent = book.genero;
+    const genreBadge = document.getElementById('modalGenreBadge') || document.getElementById('modalGenre');
+    if (genreBadge) genreBadge.textContent = book.genero;
     document.getElementById('modalYear').textContent = book.anoPublicacao;
     document.getElementById('modalPages').textContent = book.paginas;
     
