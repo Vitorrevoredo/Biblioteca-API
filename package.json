@@ -8,7 +8,9 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "jest --coverage"
+    "lint": "eslint src/ tests/",
+    "test": "jest --coverage",
+    "test:unit": "jest"
   },
   "jest": {
     "testEnvironment": "node",
@@ -26,8 +28,14 @@
     }
   },
   "devDependencies": {
+    "eslint": "^8.57.1",
     "jest": "^29.7.0"
   },
-  "keywords": ["api", "biblioteca", "nodejs", "rest"],
+  "keywords": [
+    "api",
+    "biblioteca",
+    "nodejs",
+    "rest"
+  ],
   "license": "ISC"
 }

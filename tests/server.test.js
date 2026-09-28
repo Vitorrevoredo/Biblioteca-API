@@ -340,6 +340,15 @@ describe('POST /api/livros', () => {
 
         fs.writeFileSync = originalWriteFileSync;
     });
+
+    test('deve criar livro com campo capa opcional', async () => {
+        const res = await makeRequest('POST', '/api/livros', {
+            ...livroValido,
+            capa: 'https://example.com/capa.jpg'
+        });
+        expect(res.statusCode).toBe(201);
+        expect(res.body).toHaveProperty('capa', 'https://example.com/capa.jpg');
+    });
 });
 
 describe('PUT /api/livros/:id', () => {
@@ -434,13 +443,29 @@ describe('PUT /api/livros/:id', () => {
 
         fs.writeFileSync = originalWriteFileSync;
     });
+
+    test('deve manter capa existente quando capa não é fornecida no PUT', async () => {
+        // Livro 1 tem capa definida no database.json
+        const res = await makeRequest('PUT', '/api/livros/1', livroAtualizado);
+        expect(res.statusCode).toBe(200);
+        // capa original deve ser mantida
+        expect(res.body).toHaveProperty('capa');
+    });
+
+    test('deve atualizar capa quando fornecida no PUT', async () => {
+        const res = await makeRequest('PUT', '/api/livros/1', {
+            ...livroAtualizado,
+            capa: 'https://nova-capa.com/img.jpg'
+        });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.capa).toBe('https://nova-capa.com/img.jpg');
+    });
 });
 
 describe('DELETE /api/livros/:id', () => {
-    test('deve deletar um livro existente (200)', async () => {
+    test('deve deletar um livro existente e retornar 204 (sem corpo)', async () => {
         const res = await makeRequest('DELETE', '/api/livros/1');
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('mensagem');
+        expect(res.statusCode).toBe(204);
 
         // Verifica que o livro foi removido
         const listRes = await makeRequest('GET', '/api/livros');
