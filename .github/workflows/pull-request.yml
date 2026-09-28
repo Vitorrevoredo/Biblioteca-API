@@ -1,36 +1,66 @@
-name: CI - Pull Request
+﻿name: CI - Pull Request
 
 on:
   pull_request:
     branches:
       - main
-      - '**'
+      - develop
 
 jobs:
-  build-and-test:
-    name: Build & Test (Node.js)
+  # ──────────────────────────────────────────────
+  # JOB 1: Verificacao de Linter
+  # ──────────────────────────────────────────────
+  lint:
+    name: "Linter (ESLint)"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clonar repositório
+      - name: Clonar repositorio
         uses: actions/checkout@v4
 
-      - name: Trocar para branch específica (atividade frequente)
-        run: git checkout ${{ github.head_ref }}
-
-      - name: Instalar interpretador — Node.js 20
+      - name: Instalar Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
-      - name: Instalar dependências
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Executar testes com cobertura
+      - name: Executar ESLint
+        run: npm run lint
+
+  # ──────────────────────────────────────────────
+  # JOB 2: Testes de unidade, integracao e cobertura
+  # ──────────────────────────────────────────────
+  test:
+    name: "Testes & Cobertura (Jest)"
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Executar testes de unidade e integracao
+        run: npm run test:unit -- --verbose
+
+      - name: Executar verificacao de cobertura
         run: npm test
 
-      - name: Verificar cobertura mínima (90%)
-        run: |
-          echo "Cobertura verificada pelo threshold configurado no jest (package.json)"
-          echo "Branches: 90% | Functions: 90% | Lines: 90% | Statements: 90%"
+      - name: Publicar relatorio de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-pr
+          path: coverage/
+          retention-days: 14

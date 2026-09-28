@@ -132,13 +132,13 @@ const server = http.createServer(async (req, res) => {
     // 2. GET /api/livros/:id (Buscar por ID)
     if (pathname.startsWith('/api/livros/') && req.method === 'GET') {
         const id = pathname.split('/')[3];
-        if (!id) return sendJSON(res, 400, { erro: "ID não fornecido." });
+        if (!id) return sendJSON(res, 400, { erro: 'ID não fornecido.' });
 
         const livros = readDatabase();
         const livro = livros.find(l => l.id === id);
 
         if (!livro) {
-            return sendJSON(res, 404, { erro: "Livro não encontrado." });
+            return sendJSON(res, 404, { erro: 'Livro não encontrado.' });
         }
 
         return sendJSON(res, 200, livro);
@@ -148,18 +148,18 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/livros' && req.method === 'POST') {
         try {
             const body = await getRequestBody(req);
-            if (!body) return sendJSON(res, 400, { erro: "O corpo da requisição não pode estar vazio." });
+            if (!body) return sendJSON(res, 400, { erro: 'O corpo da requisição não pode estar vazio.' });
 
             const { titulo, autor, genero, anoPublicacao, paginas, sinopse, palavrasChave, capa } = body;
 
             // Validações detalhadas do livro
-            if (!titulo || typeof titulo !== 'string' || titulo.trim() === '') return sendJSON(res, 400, { erro: "O campo 'titulo' é obrigatório." });
-            if (!autor || typeof autor !== 'string' || autor.trim() === '') return sendJSON(res, 400, { erro: "O campo 'autor' é obrigatório." });
-            if (!genero || typeof genero !== 'string' || genero.trim() === '') return sendJSON(res, 400, { erro: "O campo 'genero' é obrigatório." });
-            if (anoPublicacao === undefined || typeof anoPublicacao !== 'number' || !Number.isInteger(anoPublicacao)) return sendJSON(res, 400, { erro: "O campo 'anoPublicacao' é inválido." });
-            if (paginas === undefined || typeof paginas !== 'number' || !Number.isInteger(paginas) || paginas <= 0) return sendJSON(res, 400, { erro: "O campo 'paginas' é inválido." });
-            if (!sinopse || typeof sinopse !== 'string' || sinopse.trim() === '') return sendJSON(res, 400, { erro: "O campo 'sinopse' é obrigatório." });
-            if (!palavrasChave || !Array.isArray(palavrasChave) || palavrasChave.length === 0) return sendJSON(res, 400, { erro: "O campo 'palavrasChave' deve ser um array." });
+            if (!titulo || typeof titulo !== 'string' || titulo.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'titulo\' é obrigatório.' });
+            if (!autor || typeof autor !== 'string' || autor.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'autor\' é obrigatório.' });
+            if (!genero || typeof genero !== 'string' || genero.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'genero\' é obrigatório.' });
+            if (anoPublicacao === undefined || typeof anoPublicacao !== 'number' || !Number.isInteger(anoPublicacao)) return sendJSON(res, 400, { erro: 'O campo \'anoPublicacao\' é inválido.' });
+            if (paginas === undefined || typeof paginas !== 'number' || !Number.isInteger(paginas) || paginas <= 0) return sendJSON(res, 400, { erro: 'O campo \'paginas\' é inválido.' });
+            if (!sinopse || typeof sinopse !== 'string' || sinopse.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'sinopse\' é obrigatório.' });
+            if (!palavrasChave || !Array.isArray(palavrasChave) || palavrasChave.length === 0) return sendJSON(res, 400, { erro: 'O campo \'palavrasChave\' deve ser um array.' });
 
             const livros = readDatabase();
             const maxId = livros.reduce((max, livro) => Math.max(max, parseInt(livro.id) || 0), 0);
@@ -180,7 +180,7 @@ const server = http.createServer(async (req, res) => {
             livros.push(novoLivro);
             const sucesso = writeDatabase(livros);
 
-            if (!sucesso) return sendJSON(res, 500, { erro: "Falha interna ao salvar as alterações." });
+            if (!sucesso) return sendJSON(res, 500, { erro: 'Falha interna ao salvar as alterações.' });
             return sendJSON(res, 201, novoLivro);
         } catch (error) {
             return sendJSON(res, 400, { erro: error.message });
@@ -190,28 +190,28 @@ const server = http.createServer(async (req, res) => {
     // 4. PUT /api/livros/:id (Atualizar completo)
     if (pathname.startsWith('/api/livros/') && req.method === 'PUT') {
         const id = pathname.split('/')[3];
-        if (!id) return sendJSON(res, 400, { erro: "ID não fornecido." });
+        if (!id) return sendJSON(res, 400, { erro: 'ID não fornecido.' });
 
         const livros = readDatabase();
         const index = livros.findIndex(l => l.id === id);
 
         if (index === -1) {
-            return sendJSON(res, 404, { erro: "Livro não encontrado." });
+            return sendJSON(res, 404, { erro: 'Livro não encontrado.' });
         }
 
         try {
             const body = await getRequestBody(req);
-            if (!body) return sendJSON(res, 400, { erro: "O corpo da requisição não pode estar vazio." });
+            if (!body) return sendJSON(res, 400, { erro: 'O corpo da requisição não pode estar vazio.' });
 
             const { titulo, autor, genero, anoPublicacao, paginas, sinopse, palavrasChave, capa } = body;
 
-            if (!titulo || typeof titulo !== 'string' || titulo.trim() === '') return sendJSON(res, 400, { erro: "O campo 'titulo' é obrigatório." });
-            if (!autor || typeof autor !== 'string' || autor.trim() === '') return sendJSON(res, 400, { erro: "O campo 'autor' é obrigatório." });
-            if (!genero || typeof genero !== 'string' || genero.trim() === '') return sendJSON(res, 400, { erro: "O campo 'genero' é obrigatório." });
-            if (anoPublicacao === undefined || typeof anoPublicacao !== 'number' || !Number.isInteger(anoPublicacao)) return sendJSON(res, 400, { erro: "O campo 'anoPublicacao' é inválido." });
-            if (paginas === undefined || typeof paginas !== 'number' || !Number.isInteger(paginas) || paginas <= 0) return sendJSON(res, 400, { erro: "O campo 'paginas' é inválido." });
-            if (!sinopse || typeof sinopse !== 'string' || sinopse.trim() === '') return sendJSON(res, 400, { erro: "O campo 'sinopse' é obrigatório." });
-            if (!palavrasChave || !Array.isArray(palavrasChave) || palavrasChave.length === 0) return sendJSON(res, 400, { erro: "O campo 'palavrasChave' deve ser um array." });
+            if (!titulo || typeof titulo !== 'string' || titulo.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'titulo\' é obrigatório.' });
+            if (!autor || typeof autor !== 'string' || autor.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'autor\' é obrigatório.' });
+            if (!genero || typeof genero !== 'string' || genero.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'genero\' é obrigatório.' });
+            if (anoPublicacao === undefined || typeof anoPublicacao !== 'number' || !Number.isInteger(anoPublicacao)) return sendJSON(res, 400, { erro: 'O campo \'anoPublicacao\' é inválido.' });
+            if (paginas === undefined || typeof paginas !== 'number' || !Number.isInteger(paginas) || paginas <= 0) return sendJSON(res, 400, { erro: 'O campo \'paginas\' é inválido.' });
+            if (!sinopse || typeof sinopse !== 'string' || sinopse.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'sinopse\' é obrigatório.' });
+            if (!palavrasChave || !Array.isArray(palavrasChave) || palavrasChave.length === 0) return sendJSON(res, 400, { erro: 'O campo \'palavrasChave\' deve ser um array.' });
 
             livros[index] = {
                 id,
@@ -226,7 +226,7 @@ const server = http.createServer(async (req, res) => {
             };
 
             const sucesso = writeDatabase(livros);
-            if (!sucesso) return sendJSON(res, 500, { erro: "Falha interna ao atualizar." });
+            if (!sucesso) return sendJSON(res, 500, { erro: 'Falha interna ao atualizar.' });
 
             return sendJSON(res, 200, livros[index]);
         } catch (error) {
@@ -237,24 +237,26 @@ const server = http.createServer(async (req, res) => {
     // 5. DELETE /api/livros/:id (Excluir)
     if (pathname.startsWith('/api/livros/') && req.method === 'DELETE') {
         const id = pathname.split('/')[3];
-        if (!id) return sendJSON(res, 400, { erro: "ID não fornecido." });
+        if (!id) return sendJSON(res, 400, { erro: 'ID não fornecido.' });
 
         const livros = readDatabase();
         const index = livros.findIndex(l => l.id === id);
 
         if (index === -1) {
-            return sendJSON(res, 404, { erro: "Livro não encontrado." });
+            return sendJSON(res, 404, { erro: 'Livro não encontrado.' });
         }
 
         livros.splice(index, 1);
         const sucesso = writeDatabase(livros);
 
-        if (!sucesso) return sendJSON(res, 500, { erro: "Falha interna ao excluir." });
-        
-        return sendJSON(res, 200, { mensagem: "Livro removido com sucesso." });
+        if (!sucesso) return sendJSON(res, 500, { erro: 'Falha interna ao excluir.' });
+
+        res.writeHead(204);
+        res.end();
+        return;
     }
 
-    sendJSON(res, 404, { erro: "Recurso não encontrado na API." });
+    sendJSON(res, 404, { erro: 'Recurso não encontrado na API.' });
 });
 
 // Inicialização do servidor (somente quando executado diretamente)
