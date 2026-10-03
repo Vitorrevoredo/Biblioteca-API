@@ -68,6 +68,22 @@ function sendJSON(res, statusCode, data) {
     res.end(JSON.stringify(data));
 }
 
+// Função auxiliar para validar o corpo da requisição de um livro
+// Retorna uma mensagem de erro ou null se válido
+function validateLivroBody(body) {
+    const { titulo, autor, genero, anoPublicacao, paginas, sinopse, palavrasChave } = body;
+
+    if (!titulo || typeof titulo !== 'string' || titulo.trim() === '') return 'O campo \'titulo\' é obrigatório.';
+    if (!autor || typeof autor !== 'string' || autor.trim() === '') return 'O campo \'autor\' é obrigatório.';
+    if (!genero || typeof genero !== 'string' || genero.trim() === '') return 'O campo \'genero\' é obrigatório.';
+    if (anoPublicacao === undefined || typeof anoPublicacao !== 'number' || !Number.isInteger(anoPublicacao)) return 'O campo \'anoPublicacao\' é inválido.';
+    if (paginas === undefined || typeof paginas !== 'number' || !Number.isInteger(paginas) || paginas <= 0) return 'O campo \'paginas\' é inválido.';
+    if (!sinopse || typeof sinopse !== 'string' || sinopse.trim() === '') return 'O campo \'sinopse\' é obrigatório.';
+    if (!palavrasChave || !Array.isArray(palavrasChave) || palavrasChave.length === 0) return 'O campo \'palavrasChave\' deve ser um array.';
+
+    return null;
+}
+
 // Função auxiliar para servir arquivos estáticos
 function serveStaticFile(res, filePath) {
     let safePath = filePath;
@@ -76,6 +92,14 @@ function serveStaticFile(res, filePath) {
     }
 
     const fullPath = path.join(WEB_PATH, safePath);
+
+    // Proteção contra Path Traversal: garante que o caminho esteja dentro de WEB_PATH
+    if (!fullPath.startsWith(WEB_PATH)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Acesso negado.', 'utf-8');
+        return;
+    }
+
     const ext = path.extname(fullPath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
@@ -93,7 +117,7 @@ function serveStaticFile(res, filePath) {
                 });
             } else {
                 res.writeHead(500);
-                res.end(`Erro no servidor: ${error.code}..\n`);
+                res.end('Erro no servidor: ' + error.code + '.\n');
             }
         } else {
             res.writeHead(200, { 'Content-Type': contentType });
@@ -150,19 +174,13 @@ const server = http.createServer(async (req, res) => {
             const body = await getRequestBody(req);
             if (!body) return sendJSON(res, 400, { erro: 'O corpo da requisição não pode estar vazio.' });
 
+            const validationError = validateLivroBody(body);
+            if (validationError) return sendJSON(res, 400, { erro: validationError });
+
             const { titulo, autor, genero, anoPublicacao, paginas, sinopse, palavrasChave, capa } = body;
 
-            // Validações detalhadas do livro
-            if (!titulo || typeof titulo !== 'string' || titulo.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'titulo\' é obrigatório.' });
-            if (!autor || typeof autor !== 'string' || autor.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'autor\' é obrigatório.' });
-            if (!genero || typeof genero !== 'string' || genero.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'genero\' é obrigatório.' });
-            if (anoPublicacao === undefined || typeof anoPublicacao !== 'number' || !Number.isInteger(anoPublicacao)) return sendJSON(res, 400, { erro: 'O campo \'anoPublicacao\' é inválido.' });
-            if (paginas === undefined || typeof paginas !== 'number' || !Number.isInteger(paginas) || paginas <= 0) return sendJSON(res, 400, { erro: 'O campo \'paginas\' é inválido.' });
-            if (!sinopse || typeof sinopse !== 'string' || sinopse.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'sinopse\' é obrigatório.' });
-            if (!palavrasChave || !Array.isArray(palavrasChave) || palavrasChave.length === 0) return sendJSON(res, 400, { erro: 'O campo \'palavrasChave\' deve ser um array.' });
-
             const livros = readDatabase();
-            const maxId = livros.reduce((max, livro) => Math.max(max, parseInt(livro.id) || 0), 0);
+            const maxId = livros.reduce((max, livro) => Math.max(max, parseInt(livro.id, 10) || 0), 0);
             const newId = (maxId + 1).toString();
 
             const novoLivro = {
@@ -203,15 +221,10 @@ const server = http.createServer(async (req, res) => {
             const body = await getRequestBody(req);
             if (!body) return sendJSON(res, 400, { erro: 'O corpo da requisição não pode estar vazio.' });
 
-            const { titulo, autor, genero, anoPublicacao, paginas, sinopse, palavrasChave, capa } = body;
+            const validationError = validateLivroBody(body);
+            if (validationError) return sendJSON(res, 400, { erro: validationError });
 
-            if (!titulo || typeof titulo !== 'string' || titulo.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'titulo\' é obrigatório.' });
-            if (!autor || typeof autor !== 'string' || autor.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'autor\' é obrigatório.' });
-            if (!genero || typeof genero !== 'string' || genero.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'genero\' é obrigatório.' });
-            if (anoPublicacao === undefined || typeof anoPublicacao !== 'number' || !Number.isInteger(anoPublicacao)) return sendJSON(res, 400, { erro: 'O campo \'anoPublicacao\' é inválido.' });
-            if (paginas === undefined || typeof paginas !== 'number' || !Number.isInteger(paginas) || paginas <= 0) return sendJSON(res, 400, { erro: 'O campo \'paginas\' é inválido.' });
-            if (!sinopse || typeof sinopse !== 'string' || sinopse.trim() === '') return sendJSON(res, 400, { erro: 'O campo \'sinopse\' é obrigatório.' });
-            if (!palavrasChave || !Array.isArray(palavrasChave) || palavrasChave.length === 0) return sendJSON(res, 400, { erro: 'O campo \'palavrasChave\' deve ser um array.' });
+            const { titulo, autor, genero, anoPublicacao, paginas, sinopse, palavrasChave, capa } = body;
 
             livros[index] = {
                 id,
@@ -273,4 +286,4 @@ if (require.main === module) {
 }
 
 // Exporta funções e servidor para testes
-module.exports = { readDatabase, writeDatabase, getRequestBody, sendJSON, serveStaticFile, server, WEB_PATH };
+module.exports = { readDatabase, writeDatabase, getRequestBody, sendJSON, validateLivroBody, serveStaticFile, server, WEB_PATH };

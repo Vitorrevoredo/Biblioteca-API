@@ -18,7 +18,7 @@ const WEB_PATH = path.join(__dirname, '..', 'web');
 let originalDbContent;
 
 // Importa o servidor e as funções auxiliares
-const { readDatabase, writeDatabase, getRequestBody, sendJSON, serveStaticFile, server } = require('../src/server');
+const { readDatabase, writeDatabase, getRequestBody, sendJSON, validateLivroBody, serveStaticFile, server } = require('../src/server');
 
 // Porta dinâmica para evitar conflitos
 let testServer;
@@ -272,21 +272,21 @@ describe('POST /api/livros', () => {
     });
 
     test('deve retornar 400 quando titulo está ausente', async () => {
-        const { titulo, ...semTitulo } = livroValido;
+        const { titulo: _titulo, ...semTitulo } = livroValido;
         const res = await makeRequest('POST', '/api/livros', semTitulo);
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('titulo');
     });
 
     test('deve retornar 400 quando autor está ausente', async () => {
-        const { autor, ...semAutor } = livroValido;
+        const { autor: _autor, ...semAutor } = livroValido;
         const res = await makeRequest('POST', '/api/livros', semAutor);
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('autor');
     });
 
     test('deve retornar 400 quando genero está ausente', async () => {
-        const { genero, ...semGenero } = livroValido;
+        const { genero: _genero, ...semGenero } = livroValido;
         const res = await makeRequest('POST', '/api/livros', semGenero);
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('genero');
@@ -311,14 +311,14 @@ describe('POST /api/livros', () => {
     });
 
     test('deve retornar 400 quando sinopse está ausente', async () => {
-        const { sinopse, ...semSinopse } = livroValido;
+        const { sinopse: _sinopse, ...semSinopse } = livroValido;
         const res = await makeRequest('POST', '/api/livros', semSinopse);
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('sinopse');
     });
 
     test('deve retornar 400 quando palavrasChave está ausente', async () => {
-        const { palavrasChave, ...semPalavras } = livroValido;
+        const { palavrasChave: _palavrasChave, ...semPalavras } = livroValido;
         const res = await makeRequest('POST', '/api/livros', semPalavras);
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('palavrasChave');
@@ -388,21 +388,21 @@ describe('PUT /api/livros/:id', () => {
     });
 
     test('deve retornar 400 quando titulo ausente no PUT', async () => {
-        const { titulo, ...semTitulo } = livroAtualizado;
+        const { titulo: _titulo, ...semTitulo } = livroAtualizado;
         const res = await makeRequest('PUT', '/api/livros/1', semTitulo);
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('titulo');
     });
 
     test('deve retornar 400 quando autor ausente no PUT', async () => {
-        const { autor, ...semAutor } = livroAtualizado;
+        const { autor: _autor, ...semAutor } = livroAtualizado;
         const res = await makeRequest('PUT', '/api/livros/1', semAutor);
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('autor');
     });
 
     test('deve retornar 400 quando genero ausente no PUT', async () => {
-        const { genero, ...semGenero } = livroAtualizado;
+        const { genero: _genero, ...semGenero } = livroAtualizado;
         const res = await makeRequest('PUT', '/api/livros/1', semGenero);
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('genero');
@@ -421,7 +421,7 @@ describe('PUT /api/livros/:id', () => {
     });
 
     test('deve retornar 400 quando sinopse ausente no PUT', async () => {
-        const { sinopse, ...semSinopse } = livroAtualizado;
+        const { sinopse: _sinopse, ...semSinopse } = livroAtualizado;
         const res = await makeRequest('PUT', '/api/livros/1', semSinopse);
         expect(res.statusCode).toBe(400);
         expect(res.body.erro).toContain('sinopse');
@@ -599,5 +599,60 @@ describe('Inicialização do servidor (require.main branch)', () => {
         // Este teste valida que o módulo exporta corretamente sem efeitos colaterais.
         expect(server).toBeDefined();
         expect(typeof server.listen).toBe('function');
+    });
+});
+
+// ===========================
+// Testes de validateLivroBody
+// ===========================
+
+describe('validateLivroBody()', () => {
+    const bodyValido = {
+        titulo: 'Livro Válido',
+        autor: 'Autor Válido',
+        genero: 'Gênero',
+        anoPublicacao: 2020,
+        paginas: 100,
+        sinopse: 'Uma sinopse qualquer para o livro de teste.',
+        palavrasChave: ['teste']
+    };
+
+    test('deve retornar null para body válido', () => {
+        expect(validateLivroBody(bodyValido)).toBeNull();
+    });
+
+    test('deve retornar erro para titulo ausente', () => {
+        const result = validateLivroBody({ ...bodyValido, titulo: '' });
+        expect(result).toContain('titulo');
+    });
+
+    test('deve retornar erro para autor ausente', () => {
+        const result = validateLivroBody({ ...bodyValido, autor: '' });
+        expect(result).toContain('autor');
+    });
+
+    test('deve retornar erro para genero ausente', () => {
+        const result = validateLivroBody({ ...bodyValido, genero: '' });
+        expect(result).toContain('genero');
+    });
+
+    test('deve retornar erro para anoPublicacao inválido', () => {
+        const result = validateLivroBody({ ...bodyValido, anoPublicacao: 'abc' });
+        expect(result).toContain('anoPublicacao');
+    });
+
+    test('deve retornar erro para paginas inválido', () => {
+        const result = validateLivroBody({ ...bodyValido, paginas: 0 });
+        expect(result).toContain('paginas');
+    });
+
+    test('deve retornar erro para sinopse ausente', () => {
+        const result = validateLivroBody({ ...bodyValido, sinopse: '   ' });
+        expect(result).toContain('sinopse');
+    });
+
+    test('deve retornar erro para palavrasChave array vazio', () => {
+        const result = validateLivroBody({ ...bodyValido, palavrasChave: [] });
+        expect(result).toContain('palavrasChave');
     });
 });
