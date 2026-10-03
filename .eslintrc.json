@@ -1,4 +1,4 @@
-﻿{
+{
   "env": {
     "node": true,
     "es2021": true,
@@ -10,7 +10,7 @@
   },
   "rules": {
     "no-console": "off",
-    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "ignoreRestSiblings": true }],
     "eqeqeq": ["error", "always"],
     "no-var": "error",
     "prefer-const": "error",
