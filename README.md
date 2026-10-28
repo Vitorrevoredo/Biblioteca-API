@@ -120,6 +120,71 @@ Cadastra um novo livro no banco de dados JSON local. O endpoint conta com valida
 
 ---
 
+## 🐳 Docker
+
+### Badges
+
+<!-- Substitua SEU_USUARIO pelo seu usuário real do Docker Hub -->
+[![Docker Pulls](https://img.shields.io/docker/pulls/devsilvafelipe/biblioteca-api?style=flat-square&logo=docker)](https://hub.docker.com/r/devsilvafelipe/biblioteca-api)
+[![Docker Image Version](https://img.shields.io/docker/v/devsilvafelipe/biblioteca-api?sort=date&style=flat-square&logo=docker&label=latest)](https://hub.docker.com/r/devsilvafelipe/biblioteca-api)
+
+> **Nota:** Substitua `SEU_USUARIO` pelo seu nome de usuário real do Docker Hub nos badges e comandos abaixo.
+
+### Como a Imagem é Construída e Publicada
+
+O workflow **Docker CI/CD** (`.github/workflows/docker-ci.yml`) possui **3 jobs**:
+
+| Job | Descrição | Quando executa |
+|-----|-----------|----------------|
+| **Build** | Constrói a imagem Docker para validar o Dockerfile | Push em qualquer branch + Pull Requests |
+| **Testes** | Executa ESLint + Jest com cobertura mínima de 90% | Push em qualquer branch + Pull Requests |
+| **Publicação** | Publica a imagem no Docker Hub com tags `latest` e SHA do commit | **Somente** push na branch `baseline` |
+
+A publicação **depende obrigatoriamente** do sucesso dos jobs de Build e Testes.
+
+### 🔗 Link do Docker Hub
+
+```
+https://hub.docker.com/r/devsilvafelipe/biblioteca-api
+```
+
+### ⚙️ Configuração dos Secrets no GitHub
+
+Para que a publicação no Docker Hub funcione, configure os seguintes valores em **Settings > Secrets and variables > Actions** no repositório GitHub:
+
+| Tipo | Nome | Descrição |
+|------|------|-----------|
+| **Variable** | `DOCKERHUB_USERNAME` | Seu nome de usuário do Docker Hub |
+| **Secret** | `DOCKERHUB_TOKEN` | Token de acesso do Docker Hub (gere em [hub.docker.com/settings/security](https://hub.docker.com/settings/security)) |
+
+### 🏗️ Construir a Imagem Localmente
+
+```bash
+docker build -t biblioteca-api .
+```
+
+### ▶️ Executar a Imagem Localmente
+
+```bash
+docker run -d -p 8080:8080 --name biblioteca biblioteca-api
+```
+
+Acesse a aplicação em: [http://localhost:8080](http://localhost:8080)
+
+- **Interface Web**: `http://localhost:8080/`
+- **API REST**: `http://localhost:8080/api/livros`
+
+Para parar o container:
+```bash
+docker stop biblioteca && docker rm biblioteca
+```
+
+### 📌 Observação Importante
+
+A publicação automática da imagem no Docker Hub ocorre **exclusivamente** na branch `baseline`. Pushes em outras branches (como `main`, `develop`, etc.) executam apenas o build e os testes, sem publicar a imagem.
+
+---
+
 ## 📈 Workflow de Desenvolvimento Adotado
 
 Para a gestão de configuração e controle de alterações deste repositório, adotamos o **GitHub Flow**.

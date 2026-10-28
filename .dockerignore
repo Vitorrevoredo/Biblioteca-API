@@ -1,0 +1,31 @@
+# Controle de versão
+.git
+.gitignore
+
+# Dependências locais (serão instaladas no build)
+node_modules
+
+# Binário portátil Windows (não utilizado no container Linux)
+.bin
+
+# Artefatos de teste e cobertura
+coverage
+
+# Configurações de CI/CD e IDE
+.github
+.eslintrc.json
+.eslintignore
+sonar-project.properties
+
+# Documentação e chaves (não necessários na imagem)
+README.md
+gpg-public-key.asc
+
+# Docker (evita recursão)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Variáveis de ambiente com segredos
+.env
+.env.*
