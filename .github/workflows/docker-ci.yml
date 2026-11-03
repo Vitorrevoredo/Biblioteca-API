@@ -1,0 +1,124 @@
+# =================================================================
+# Docker CI/CD — Build, Testes e Publicação no Docker Hub
+# =================================================================
+# Este workflow possui exatamente 3 jobs:
+#   1. build    — Constrói a imagem Docker (todas as branches + PRs)
+#   2. test     — Executa lint e testes Jest (todas as branches + PRs)
+#   3. publish  — Publica no Docker Hub (SOMENTE push na branch baseline)
+# =================================================================
+
+name: Docker CI/CD
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+# Permissões mínimas necessárias
+permissions:
+  contents: read
+
+jobs:
+  # ──────────────────────────────────────────────
+  # JOB 1 — BUILD
+  # Constrói a imagem Docker para validar o Dockerfile.
+  # Não publica a imagem. Falha se o build estiver incorreto.
+  # ──────────────────────────────────────────────
+  build:
+    name: "Docker Build"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir imagem Docker (sem publicar)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: biblioteca-api:ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────
+  # JOB 2 — TESTES E VALIDAÇÃO
+  # Executa os testes reais do projeto (ESLint + Jest com cobertura).
+  # Utiliza os testes existentes em tests/server.test.js.
+  # ──────────────────────────────────────────────
+  test:
+    name: "Testes e Validação"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar ESLint
+        run: npm run lint
+
+      - name: Executar testes com cobertura (Jest)
+        run: npm test
+        env:
+          CI: true
+
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-docker-ci
+          path: coverage/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────
+  # JOB 3 — PUBLICAÇÃO NO DOCKER HUB
+  # Só executa em push na branch "baseline".
+  # Depende do sucesso dos jobs "build" e "test".
+  # Publica tags: latest e sha do commit.
+  # ──────────────────────────────────────────────
+  publish:
+    name: "Publicar no Docker Hub"
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/baseline'
+
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Autenticar no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Construir e publicar imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/biblioteca-api:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/biblioteca-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
