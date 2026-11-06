@@ -1,0 +1,220 @@
+---
+# ==============================================================================
+# Playbook: configura-node.yaml
+# Descrição: Provisionamento, clone e instalação da Biblioteca API no nó VM2
+# Padrão: Gestão de Configurações (Idempotente, Declarativo e Automatizado)
+# ==============================================================================
+
+- name: Configurar Nó de Execução da Aplicação (VM2)
+  hosts: webservers
+  become: true
+  gather_facts: true
+
+  vars:
+    app_name: "biblioteca-api"
+    app_repo_url: "https://github.com/Vitorrevoredo/Biblioteca-API.git"
+    app_branch: "main"
+    app_dest_dir: "/opt/biblioteca-api"
+    app_port: 8080
+    app_user: "vagrant"
+    app_group: "vagrant"
+    node_major_version: 20
+
+  tasks:
+    # ==========================================================================
+    # 1. Dependências do Sistema Operacional
+    # ==========================================================================
+    - name: Atualizar cache do APT
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Instalar pacotes de pré-requisito do sistema
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - git
+          - build-essential
+        state: present
+
+    # ==========================================================================
+    # 2. Instalação do Node.js Runtime (NodeSource 20.x)
+    # ==========================================================================
+    - name: Criar diretório para keyring do APT
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Baixar chave GPG do repositório NodeSource
+      ansible.builtin.get_url:
+        url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+        dest: /tmp/nodesource.gpg.key
+        mode: '0644'
+
+    - name: Desarmar chave GPG do NodeSource para o keyring
+      ansible.builtin.command:
+        cmd: gpg --dearmor --yes -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.gpg.key
+      args:
+        creates: /etc/apt/keyrings/nodesource.gpg
+
+    - name: Configurar repositório do NodeSource para Node.js 20.x
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_{{ node_major_version }}.x nodistro main"
+        state: present
+        filename: nodesource
+
+    - name: Instalar Node.js e npm
+      ansible.builtin.apt:
+        name: nodejs
+        state: present
+        update_cache: true
+
+    - name: Verificar versão do Node.js instalado
+      ansible.builtin.command: node --version
+      register: node_version_output
+      changed_when: false
+
+    - name: Verificar versão do npm instalado
+      ansible.builtin.command: npm --version
+      register: npm_version_output
+      changed_when: false
+
+    - name: Exibir versões do runtime instaladas
+      ansible.builtin.debug:
+        msg:
+          - "Node.js instalado: {{ node_version_output.stdout }}"
+          - "npm instalado:     {{ npm_version_output.stdout }}"
+
+    # ==========================================================================
+    # 3. Clone do Repositório da Aplicação
+    # ==========================================================================
+    - name: Criar diretório de destino da aplicação
+      ansible.builtin.file:
+        path: "{{ app_dest_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+
+    - name: Clonar repositório da aplicação a partir do GitHub
+      ansible.builtin.git:
+        repo: "{{ app_repo_url }}"
+        dest: "{{ app_dest_dir }}"
+        version: "{{ app_branch }}"
+        clone: true
+        update: true
+        force: true
+      register: git_clone_result
+
+    - name: Exibir status do clone do repositório
+      ansible.builtin.debug:
+        msg: "Repositório clonado com sucesso no commit {{ git_clone_result.after | default('HEAD') }}"
+
+    # ==========================================================================
+    # 4. Instalação das Dependências de Execução
+    # ==========================================================================
+    - name: Verificar se arquivo package.json existe
+      ansible.builtin.stat:
+        path: "{{ app_dest_dir }}/package.json"
+      register: package_json_stat
+
+    - name: Instalar dependências de produção com npm ci
+      ansible.builtin.command:
+        cmd: npm ci --omit=dev --ignore-scripts
+        chdir: "{{ app_dest_dir }}"
+      when: package_json_stat.stat.exists
+      register: npm_install_result
+      changed_when: "'added' in npm_install_result.stdout or 'audited' in npm_install_result.stdout"
+
+    - name: Garantir permissões de propriedade no diretório da aplicação
+      ansible.builtin.file:
+        path: "{{ app_dest_dir }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        recurse: true
+
+    - name: Garantir permissão de leitura/escrita no banco de dados JSON
+      ansible.builtin.file:
+        path: "{{ app_dest_dir }}/src/database.json"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0664'
+      ignore_errors: true
+
+    # ==========================================================================
+    # 5. Configuração e Inicialização do Serviço (systemd)
+    # ==========================================================================
+    - name: Criar arquivo de unidade systemd para a aplicação
+      ansible.builtin.copy:
+        dest: "/etc/systemd/system/{{ app_name }}.service"
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Biblioteca API - Servidor REST Node.js
+          Documentation=https://github.com/Vitorrevoredo/Biblioteca-API
+          After=network.target
+
+          [Service]
+          Type=simple
+          WorkingDirectory={{ app_dest_dir }}
+          ExecStart=/usr/bin/node src/server.js
+          Restart=on-failure
+          RestartSec=5
+          StandardOutput=journal
+          StandardError=journal
+          SyslogIdentifier={{ app_name }}
+
+          # Variáveis de ambiente
+          Environment=NODE_ENV=production
+          Environment=PORT={{ app_port }}
+
+          # Execução segura com usuário não-root
+          User={{ app_user }}
+          Group={{ app_group }}
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Reiniciar servico biblioteca-api
+
+    - name: Recarregar systemd e habilitar/iniciar servico
+      ansible.builtin.systemd:
+        name: "{{ app_name }}"
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    # ==========================================================================
+    # 6. Verificação e Teste de Saúde da Aplicação
+    # ==========================================================================
+    - name: Aguardar o servidor responder na porta {{ app_port }}
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        delay: 2
+        timeout: 30
+        state: started
+
+    - name: Realizar teste HTTP GET na rota /api/livros
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_port }}/api/livros"
+        method: GET
+        status_code: 200
+        return_content: true
+      register: api_health_check
+
+    - name: Exibir validação da API
+      ansible.builtin.debug:
+        msg:
+          - "Status da API: HTTP {{ api_health_check.status }} OK"
+          - "Total de bytes recebidos: {{ api_health_check.content_length | default('N/A') }}"
+          - "A infraestrutura foi criada e configurada com sucesso pelo Ansible!"
+
+  handlers:
+    - name: Reiniciar servico biblioteca-api
+      ansible.builtin.systemd:
+        name: "{{ app_name }}"
+        state: restarted
+        daemon_reload: true

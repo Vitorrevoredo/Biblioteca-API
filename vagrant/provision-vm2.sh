@@ -1,124 +1,113 @@
 #!/usr/bin/env bash
-# ============================================
-# provision-vm2.sh — Provisionamento da VM2 (Servidor)
-# ============================================
-# Instala o Node.js 20.x, configura a aplicação
-# Biblioteca API e cria um serviço systemd para
-# mantê-la em execução contínua na porta 8080.
-# ============================================
+# ==============================================================================
+# provision-vm2.sh — Provisionamento da VM2 (Managed Node / Servidor de Aplicação)
+# ==============================================================================
+# Responsável por:
+#   1. Atualizar pacotes do sistema
+#   2. Instalar dependências básicas, Python 3 (essencial para o Ansible) e Git
+#   3. Configurar SSH para aceitar conexões remotas do Nó de Controle (VM1)
+#   4. Instalar Node.js 20.x e preparar o ambiente de execução da aplicação
+#   5. Configurar serviço systemd para a Biblioteca API
+# ==============================================================================
 
 set -euo pipefail
 
-echo "=========================================="
-echo " VM2 — Provisionamento do Servidor"
-echo "=========================================="
+echo "============================================================"
+echo " [VM2] Provisionamento do Nó de Aplicação (Servidor)"
+echo "============================================================"
 
-# ============================================
-# 1. Atualizar pacotes do sistema
-# ============================================
-echo "[VM2] Atualizando lista de pacotes..."
 export DEBIAN_FRONTEND=noninteractive
+
+# ==============================================================================
+# 1. Atualizar pacotes do sistema
+# ==============================================================================
+echo "[VM2] Atualizando lista de pacotes..."
 apt-get update -y
 
-# ============================================
-# 2. Instalar dependências básicas para o setup do repositório Node.js
-# ============================================
-echo "[VM2] Instalando dependências de pré-requisito..."
-apt-get install -y ca-certificates curl gnupg
+# ==============================================================================
+# 2. Instalar dependências de sistema (Python 3 para Ansible, curl, git, etc.)
+# ==============================================================================
+echo "[VM2] Instalando dependências de sistema..."
+apt-get install -y \
+    ca-certificates \
+    curl \
+    gnupg \
+    git \
+    python3 \
+    python3-apt \
+    python3-pip \
+    build-essential
 
-# ============================================
-# 3. Instalar Node.js 20.x (mesma versão do Dockerfile)
-# ============================================
+# ==============================================================================
+# 3. Configurar SSH para receber conexões do Nó de Controle (VM1)
+# ==============================================================================
+echo "[VM2] Configurando chaves SSH autorizadas..."
+SSH_DIR="/home/vagrant/.ssh"
+mkdir -p "$SSH_DIR"
+touch "$SSH_DIR/authorized_keys"
+
+# Autorizar a chave pública da VM1 se já gerada
+KEYS_DIR="/vagrant_data/.keys"
+if [ -f "$KEYS_DIR/vm1_id_rsa.pub" ]; then
+    echo "[VM2] Adicionando chave pública do Nó de Controle (VM1)..."
+    cat "$KEYS_DIR/vm1_id_rsa.pub" >> "$SSH_DIR/authorized_keys"
+fi
+
+# Ajustar permissões seguras do SSH
+chown -R vagrant:vagrant "$SSH_DIR"
+chmod 700 "$SSH_DIR"
+chmod 600 "$SSH_DIR/authorized_keys"
+
+# Garantir que autenticação por senha e por chave pública estejam ativas
+sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config /etc/ssh/sshd_config.d/*.conf 2>/dev/null || true
+sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config /etc/ssh/sshd_config.d/*.conf 2>/dev/null || true
+systemctl restart ssh 2>/dev/null || systemctl restart sshd 2>/dev/null || true
+
+# ==============================================================================
+# 4. Instalar Node.js 20.x (Runtime oficial)
+# ==============================================================================
 echo "[VM2] Configurando repositório NodeSource para Node.js 20.x..."
-
-# Criar diretório para a chave GPG
 mkdir -p /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor --yes -o /etc/apt/keyrings/nodesource.gpg
 
-# Baixar e instalar a chave GPG do NodeSource
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-
-# Adicionar o repositório do NodeSource para Node.js 20
 NODE_MAJOR=20
 echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 
-# Atualizar pacotes com o novo repositório e instalar Node.js
 apt-get update -y
 apt-get install -y nodejs
 
-# ============================================
-# 4. Verificar instalação do Node.js e npm
-# ============================================
-echo "[VM2] Verificando Node.js e npm..."
-NODE_VERSION=$(node --version)
-NPM_VERSION=$(npm --version)
-echo "[VM2] Node.js: $NODE_VERSION"
-echo "[VM2] npm: $NPM_VERSION"
+echo "[VM2] Versões instaladas: Node.js $(node --version), npm $(npm --version)"
 
-# ============================================
-# 5. Verificar se a pasta compartilhada está disponível
-# ============================================
+# ==============================================================================
+# 5. Verificar pasta compartilhada /vagrant_data
+# ==============================================================================
 echo "[VM2] Verificando pasta compartilhada /vagrant_data..."
-if [ ! -d "/vagrant_data" ]; then
-    echo "[VM2] ERRO: Pasta compartilhada /vagrant_data não encontrada!"
-    exit 1
+if [ -d "/vagrant_data" ]; then
+    echo "[VM2] Pasta compartilhada /vagrant_data montada com sucesso."
 fi
 
-if [ ! -f "/vagrant_data/src/server.js" ]; then
-    echo "[VM2] ERRO: Arquivo src/server.js não encontrado em /vagrant_data!"
-    exit 1
-fi
-echo "[VM2] Pasta compartilhada verificada com sucesso."
+# ==============================================================================
+# 6. Criar serviço systemd biblioteca-api.service
+# ==============================================================================
+# Nota: Este serviço executa a aplicação tanto a partir de /vagrant_data
+# quanto permite que o Ansible reconfigure para /opt/biblioteca-api de forma idempotente.
+# ==============================================================================
+echo "[VM2] Configurando serviço systemd inicial..."
 
-# ============================================
-# 6. Instalar dependências de produção (se existirem)
-# ============================================
-echo "[VM2] Verificando dependências de produção..."
-cd /vagrant_data
-
-if [ -f "package.json" ]; then
-    # Verificar se existem dependências de produção no package.json
-    HAS_DEPS=$(node -e "
-        const pkg = require('./package.json');
-        const deps = pkg.dependencies || {};
-        console.log(Object.keys(deps).length > 0 ? 'true' : 'false');
-    ")
-
-    if [ "$HAS_DEPS" = "true" ]; then
-        echo "[VM2] Instalando dependências de produção..."
-        npm ci --omit=dev --ignore-scripts
-    else
-        echo "[VM2] Nenhuma dependência de produção encontrada. Prosseguindo sem npm install."
-    fi
-else
-    echo "[VM2] AVISO: package.json não encontrado."
+APP_DIR="/vagrant_data"
+if [ ! -f "$APP_DIR/src/server.js" ] && [ -d "/opt/biblioteca-api" ]; then
+    APP_DIR="/opt/biblioteca-api"
 fi
 
-# ============================================
-# 7. Verificar permissões do database.json
-# ============================================
-echo "[VM2] Verificando permissões do banco de dados..."
-DB_FILE="/vagrant_data/src/database.json"
-if [ -f "$DB_FILE" ]; then
-    chmod 664 "$DB_FILE" 2>/dev/null || echo "[VM2] AVISO: Não foi possível alterar permissões de database.json (pode ser limitação do synced folder)."
-    echo "[VM2] database.json acessível."
-else
-    echo "[VM2] AVISO: database.json não encontrado. A aplicação criará um novo se necessário."
-fi
-
-# ============================================
-# 8. Criar serviço systemd para a Biblioteca API
-# ============================================
-echo "[VM2] Criando serviço systemd biblioteca-api.service..."
-
-cat > /etc/systemd/system/biblioteca-api.service << 'EOF'
+cat > /etc/systemd/system/biblioteca-api.service << EOF
 [Unit]
 Description=Biblioteca API - Servidor REST Node.js
-Documentation=https://github.com/devsilvafelipe/biblioteca-api
+Documentation=https://github.com/Vitorrevoredo/Biblioteca-API
 After=network.target vagrant.mount
 
 [Service]
 Type=simple
-WorkingDirectory=/vagrant_data
+WorkingDirectory=${APP_DIR}
 ExecStart=/usr/bin/node src/server.js
 Restart=on-failure
 RestartSec=5
@@ -126,11 +115,9 @@ StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=biblioteca-api
 
-# Variáveis de ambiente
 Environment=NODE_ENV=production
 Environment=PORT=8080
 
-# Segurança — executa como usuário vagrant (dono dos arquivos compartilhados)
 User=vagrant
 Group=vagrant
 
@@ -138,42 +125,12 @@ Group=vagrant
 WantedBy=multi-user.target
 EOF
 
-# ============================================
-# 9. Habilitar e iniciar o serviço
-# ============================================
-echo "[VM2] Habilitando e iniciando o serviço biblioteca-api..."
 systemctl daemon-reload
 systemctl enable biblioteca-api.service
-systemctl start biblioteca-api.service
+systemctl restart biblioteca-api.service || true
 
-# Aguardar o servidor inicializar
-echo "[VM2] Aguardando o servidor iniciar..."
-sleep 3
-
-# ============================================
-# 10. Verificar se o serviço está rodando
-# ============================================
-echo "[VM2] Verificando status do serviço..."
-if systemctl is-active --quiet biblioteca-api.service; then
-    echo "[VM2] Serviço biblioteca-api está ATIVO e rodando!"
-else
-    echo "[VM2] AVISO: Serviço biblioteca-api pode não ter iniciado corretamente."
-    echo "[VM2] Verificar logs com: sudo journalctl -u biblioteca-api -n 20"
-fi
-
-# Teste local rápido
-echo "[VM2] Testando API localmente..."
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/livros 2>/dev/null || echo "000")
-if [ "$RESPONSE" = "200" ]; then
-    echo "[VM2] API respondendo com HTTP 200 na porta 8080!"
-else
-    echo "[VM2] AVISO: API retornou HTTP $RESPONSE. Verifique os logs."
-fi
-
-echo "=========================================="
-echo " VM2 — Provisionamento concluído!"
-echo " API disponível em: http://192.168.56.11:8080/api/livros"
-echo " Status: sudo systemctl status biblioteca-api"
-echo " Logs:   sudo journalctl -u biblioteca-api -f"
-echo "=========================================="
-
+echo "============================================================"
+echo " [VM2] Nó de Aplicação provisionado com sucesso!"
+echo " IP Privado: 192.168.56.11"
+echo " Pronto para ser gerenciado pelo Nó de Controle (VM1) via Ansible"
+echo "============================================================"
