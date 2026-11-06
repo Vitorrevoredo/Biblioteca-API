@@ -1,3 +1,10 @@
 node_modules/
 coverage/
 .bin/
+
+# Vagrant — arquivos temporários das máquinas virtuais
+.vagrant/
+.keys/
+
+# Ansible — arquivos de retry
+*.retry
