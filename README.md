@@ -203,3 +203,155 @@ A decisão de usar o **GitHub Flow** em detrimento do **Git Flow** tradicional o
 1. **Simplicidade e Agilidade**: O projeto é focado em fornecer uma API enxuta e direta. Gerenciar branches extras (`develop`, `release/*`, `hotfix/*`) adicionaria overhead administrativo desnecessário, diminuindo a agilidade do desenvolvimento.
 2. **Ideal para Entrega Contínua (CD)**: A branch `main` atua como a única fonte de verdade e está sempre em estado pronto para deploy ("production-ready"). Qualquer merge na `main` representa uma nova versão estável da API.
 3. **Melhor Rastreabilidade de Funcionalidades**: O isolamento em branches de feature temporárias permite que cada requisito (como a rota POST solicitada) seja testado isoladamente antes do merge, reduzindo conflitos de integração e preservando o histórico de commits limpo e atômico.
+
+
+---
+
+## 🖥️ Virtualização com Vagrant e VirtualBox
+
+### Objetivo
+
+Esta infraestrutura oferece uma **alternativa ao Docker** para executar a Biblioteca API em máquinas virtuais Linux completas, utilizando **Vagrant** como ferramenta de provisionamento e **VirtualBox** como provedor de virtualização.
+
+A configuração cria **duas máquinas virtuais** que se comunicam por uma rede privada:
+
+| Máquina | Função | IP Privado | RAM | CPU |
+|---------|--------|------------|-----|-----|
+| **VM1** (`vm1`) | Cliente — realiza requisições HTTP à API | `192.168.56.10` | 1024 MB | 1 |
+| **VM2** (`vm2`) | Servidor — executa a Biblioteca API na porta 8080 | `192.168.56.11` | 1024 MB | 1 |
+
+- **VM1** possui o `curl` instalado para testar os endpoints da API.
+- **VM2** possui o Node.js 20.x instalado e executa a aplicação como um serviço `systemd` (`biblioteca-api.service`), garantindo inicialização automática e reinício em caso de falha.
+
+### Pré-requisitos no Computador Host (Windows)
+
+Antes de iniciar, instale os seguintes softwares no seu computador:
+
+1. **VirtualBox** (versão 6.1 ou superior): [https://www.virtualbox.org/wiki/Downloads](https://www.virtualbox.org/wiki/Downloads)
+2. **Vagrant** (versão 2.3 ou superior): [https://developer.hashicorp.com/vagrant/downloads](https://developer.hashicorp.com/vagrant/downloads)
+
+> Após a instalação, reinicie o terminal para garantir que os comandos `vagrant` e `VBoxManage` estejam disponíveis no PATH.
+
+### Validar o Vagrantfile
+
+```bash
+vagrant validate
+```
+
+### Iniciar as Duas Máquinas
+
+```bash
+vagrant up --provider=virtualbox
+```
+
+> O primeiro `vagrant up` pode demorar alguns minutos, pois baixa a box `ubuntu/jammy64` e executa o provisionamento completo (atualização de pacotes, instalação do Node.js, etc.).
+
+### Verificar o Estado das Máquinas
+
+```bash
+vagrant status
+```
+
+Saída esperada:
+
+```text
+Current machine states:
+
+vm1                       running (virtualbox)
+vm2                       running (virtualbox)
+```
+
+### Acessar a VM1 (Cliente)
+
+```bash
+vagrant ssh vm1
+```
+
+### Testar a API a partir da VM1
+
+Dentro da VM1, execute:
+
+**Com curl:**
+
+```bash
+curl -i http://192.168.56.11:8080/api/livros
+```
+
+**Com wget (alternativa):**
+
+```bash
+wget -qO- http://192.168.56.11:8080/api/livros
+```
+
+**Resultado esperado:** resposta HTTP `200 OK` com o corpo contendo um array JSON dos livros cadastrados:
+
+```json
+[
+  {
+    "id": "1",
+    "titulo": "Dom Casmurro",
+    "autor": "Machado de Assis",
+    "genero": "Romance",
+    "anoPublicacao": 1899,
+    "paginas": 256,
+    "sinopse": "Uma narrativa em primeira pessoa por Bento Santiago...",
+    "palavrasChave": ["Literatura Brasileira", "Realismo", "Clássico"]
+  }
+]
+```
+
+### Acessar a VM2 (Servidor)
+
+```bash
+vagrant ssh vm2
+```
+
+### Verificar o Serviço na VM2
+
+Dentro da VM2, consulte o status do serviço:
+
+```bash
+sudo systemctl status biblioteca-api
+```
+
+### Consultar os Logs da Aplicação
+
+```bash
+sudo journalctl -u biblioteca-api -f
+```
+
+> Use `Ctrl+C` para sair da visualização em tempo real dos logs.
+
+### Parar as Máquinas
+
+```bash
+vagrant halt
+```
+
+### Destruir as Máquinas Virtuais
+
+Para remover completamente as VMs e liberar espaço em disco:
+
+```bash
+vagrant destroy -f
+```
+
+### Como Funciona a Comunicação
+
+1. A **VM2** inicia a Biblioteca API automaticamente via serviço `systemd` (`biblioteca-api.service`).
+2. A aplicação escuta na porta **8080** em todas as interfaces de rede (`0.0.0.0`).
+3. A **VM1** utiliza `curl` para enviar requisições HTTP ao endereço privado da VM2 (`192.168.56.11:8080`).
+4. A VM1 recebe a resposta JSON da API.
+
+### Estrutura dos Arquivos de Infraestrutura
+
+```text
+Biblioteca-API/
+├── vagrant/
+│   ├── provision-vm1.sh    # Script de provisionamento da VM1 (cliente)
+│   └── provision-vm2.sh    # Script de provisionamento da VM2 (servidor)
+├── Vagrantfile             # Definição das máquinas virtuais
+└── .gitignore              # Inclui .vagrant/ para ignorar arquivos temporários
+```
+
+> **Nota:** A infraestrutura Vagrant é uma alternativa à execução com Docker. Ambas as formas de execução continuam disponíveis no projeto.
